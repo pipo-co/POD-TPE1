@@ -27,11 +27,11 @@ public class Server {
     public static void main(final String[] args) throws RemoteException {
         logger.info("Server Started");
 
-        final String hostPort = System.getProperty("registryAddress", DEFAULT_REGISTRY_ADDRESS);
-        final int hostPortDelimIdx = hostPort.indexOf(ADDRESS_DELIM);
+        final String address = System.getProperty("registryAddress", DEFAULT_REGISTRY_ADDRESS);
+        final int addressDelimIdx = address.indexOf(ADDRESS_DELIM);
 
-        final String    host = hostPortDelimIdx >= 0 ? hostPort.substring(0, hostPortDelimIdx)                  : DEFAULT_REGISTRY_HOST;
-        final int       port = hostPortDelimIdx >= 0 ? Integer.parseInt(hostPort.substring(hostPortDelimIdx))   : DEFAULT_REGISTRY_PORT;
+        final String    host = addressDelimIdx >= 0 ? address.substring(0, addressDelimIdx)                  : DEFAULT_REGISTRY_HOST;
+        final int       port = addressDelimIdx >= 0 ? Integer.parseInt(address.substring(addressDelimIdx))   : DEFAULT_REGISTRY_PORT;
 
         final Registry registry = LocateRegistry.getRegistry(host, port);
         logger.info("Registry Found");
