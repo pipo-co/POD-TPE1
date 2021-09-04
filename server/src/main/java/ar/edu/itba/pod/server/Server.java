@@ -19,10 +19,21 @@ import java.rmi.server.UnicastRemoteObject;
 public class Server {
     private static final Logger logger = LoggerFactory.getLogger(Server.class);
 
-    public static void main(String[] args) throws RemoteException {
+    private static final String DEFAULT_REGISTRY_HOST       = "localhost";
+    private static final int    DEFAULT_REGISTRY_PORT       = Registry.REGISTRY_PORT;
+    private static final char   ADDRESS_DELIM               = ':';
+    private static final String DEFAULT_REGISTRY_ADDRESS    = DEFAULT_REGISTRY_HOST + ADDRESS_DELIM + DEFAULT_REGISTRY_PORT;
+
+    public static void main(final String[] args) throws RemoteException {
         logger.info("Server Started");
 
-        final Registry registry = LocateRegistry.getRegistry();
+        final String hostPort = System.getProperty("registryAddress", DEFAULT_REGISTRY_ADDRESS);
+        final int hostPortDelimIdx = hostPort.indexOf(ADDRESS_DELIM);
+
+        final String    host = hostPortDelimIdx >= 0 ? hostPort.substring(0, hostPortDelimIdx)                  : DEFAULT_REGISTRY_HOST;
+        final int       port = hostPortDelimIdx >= 0 ? Integer.parseInt(hostPort.substring(hostPortDelimIdx))   : DEFAULT_REGISTRY_PORT;
+
+        final Registry registry = LocateRegistry.getRegistry(host, port);
         logger.info("Registry Found");
 
         final FlightAdministrationService adminService = new FlightAdministrationServiceImpl();
