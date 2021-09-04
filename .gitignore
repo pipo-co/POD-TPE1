@@ -23,9 +23,12 @@
 hs_err_pid*
 
 target/
+
+# VSCode
 .classpath
 .settings
 .project
+.vscode/
 
 # IntelliJ
 .idea/
