@@ -2,8 +2,12 @@ package ar.edu.itba.pod.server;
 
 import ar.edu.itba.pod.interfaces.FlightAdministrationService;
 import ar.edu.itba.pod.interfaces.FlightInfoService;
-import ar.edu.itba.pod.interfaces.FlightTrackRequestService;
+import ar.edu.itba.pod.interfaces.FlightRunwayRequestService;
 import ar.edu.itba.pod.interfaces.FlightTrackingService;
+import ar.edu.itba.pod.server.services.FlightAdministrationServiceImpl;
+import ar.edu.itba.pod.server.services.FlightInfoServiceImpl;
+import ar.edu.itba.pod.server.services.FlightRunwayRequestServiceImpl;
+import ar.edu.itba.pod.server.services.FlightTrackingServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,9 +37,9 @@ public class Server {
         registry.rebind(FlightTrackingService.CANONICAL_NAME, UnicastRemoteObject.exportObject(trackingService, 0));
         logger.info("Flight Tracking Service Registered");
 
-        final FlightTrackRequestService trackRequestService = new FlightTrackRequestServiceImpl();
-        registry.rebind(FlightTrackRequestService.CANONICAL_NAME, UnicastRemoteObject.exportObject(trackRequestService, 0));
-        logger.info("Flight Track Request Service Registered");
+        final FlightRunwayRequestService trackRequestService = new FlightRunwayRequestServiceImpl();
+        registry.rebind(FlightRunwayRequestService.CANONICAL_NAME, UnicastRemoteObject.exportObject(trackRequestService, 0));
+        logger.info("Flight Runway Request Service Registered");
 
         System.out.println("All Services Registered - Awaiting Requests ...");
     }
