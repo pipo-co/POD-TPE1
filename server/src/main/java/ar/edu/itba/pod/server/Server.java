@@ -1,10 +1,12 @@
 package ar.edu.itba.pod.server;
 
-import ar.edu.itba.pod.interfaces.TestInterface;
+import ar.edu.itba.pod.interfaces.FlightAdministrationService;
+import ar.edu.itba.pod.interfaces.FlightInfoService;
+import ar.edu.itba.pod.interfaces.FlightTrackRequestService;
+import ar.edu.itba.pod.interfaces.FlightTrackingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -14,11 +16,27 @@ public class Server {
     private static final Logger logger = LoggerFactory.getLogger(Server.class);
 
     public static void main(String[] args) throws RemoteException {
-        logger.info("tp1 Server Starting ...");
-        final TestInterface servant = new TestInterfaceImpl();
-        final Remote remote = UnicastRemoteObject.exportObject(servant, 0);
+        logger.info("Server Started");
+
         final Registry registry = LocateRegistry.getRegistry();
-        registry.rebind("test", remote);
-        System.out.println("Service bound");
+        logger.info("Registry Found");
+
+        final FlightAdministrationService adminService = new FlightAdministrationServiceImpl();
+        registry.rebind(FlightAdministrationService.CANONICAL_NAME, UnicastRemoteObject.exportObject(adminService, 0));
+        logger.info("Flight Administration Service Registered");
+
+        final FlightInfoService infoService = new FlightInfoServiceImpl();
+        registry.rebind(FlightInfoService.CANONICAL_NAME, UnicastRemoteObject.exportObject(infoService, 0));
+        logger.info("Flight Information Service Registered");
+
+        final FlightTrackingService trackingService = new FlightTrackingServiceImpl();
+        registry.rebind(FlightTrackingService.CANONICAL_NAME, UnicastRemoteObject.exportObject(trackingService, 0));
+        logger.info("Flight Tracking Service Registered");
+
+        final FlightTrackRequestService trackRequestService = new FlightTrackRequestServiceImpl();
+        registry.rebind(FlightTrackRequestService.CANONICAL_NAME, UnicastRemoteObject.exportObject(trackRequestService, 0));
+        logger.info("Flight Track Request Service Registered");
+
+        System.out.println("All Services Registered - Awaiting Requests ...");
     }
 }
