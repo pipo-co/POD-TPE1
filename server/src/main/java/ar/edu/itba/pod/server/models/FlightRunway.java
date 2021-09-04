@@ -50,26 +50,24 @@ public class FlightRunway {
             return null;
         }
 
-        List<Map.Entry<Flight, FlightRunwayEvent>> eventsToPublish = null;
+        List<Flight> progressedFlights = null;
 
         final Flight departedFlight;
         synchronized(queueLock) {
             departedFlight = queuedFlights.poll();
             if(departedFlight != null) {
-                eventsToPublish = new LinkedList<>();
-                eventsToPublish.add(Map.entry(departedFlight, new FlightRunwayEvent(FLIGHT_TAKE_OFF, departedFlight.getCode(), name, -1)));
-
-                int flightPos = 0;
-                for(final Flight flight : queuedFlights) {
-                    eventsToPublish.add(Map.entry(flight, new FlightRunwayEvent(RUNWAY_PROGRESS, departedFlight.getCode(), name, flightPos)));
-                    flightPos++;
-                }
+                progressedFlights = new LinkedList<>(queuedFlights);
             }
         }
 
-        if(eventsToPublish != null) {
-            for(final Map.Entry<Flight, FlightRunwayEvent> entry : eventsToPublish) {
-                entry.getKey().publishRunwayEvent(entry.getValue());
+        if(departedFlight != null) {
+            departedFlight.publishRunwayEvent(new FlightRunwayEvent(FLIGHT_TAKE_OFF, departedFlight.getCode(), name, -1));
+        }
+        if(progressedFlights != null) {
+            int flightPos = 0;
+            for(final Flight flight : progressedFlights) {
+                flight.publishRunwayEvent(new FlightRunwayEvent(RUNWAY_PROGRESS, flight.getCode(), name, flightPos));
+                flightPos++;
             }
         }
 
