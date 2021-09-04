@@ -16,8 +16,12 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-public class Server {
+public final class Server {
     private static final Logger logger = LoggerFactory.getLogger(Server.class);
+
+    private Server() {
+        // static class
+    }
 
     private static final String DEFAULT_REGISTRY_HOST       = "localhost";
     private static final int    DEFAULT_REGISTRY_PORT       = Registry.REGISTRY_PORT;
