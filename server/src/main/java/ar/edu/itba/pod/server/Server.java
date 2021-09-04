@@ -30,8 +30,8 @@ public class Server {
         final String address = System.getProperty("registryAddress", DEFAULT_REGISTRY_ADDRESS);
         final int addressDelimIdx = address.indexOf(ADDRESS_DELIM);
 
-        final String    host = addressDelimIdx >= 0 ? address.substring(0, addressDelimIdx)                  : DEFAULT_REGISTRY_HOST;
-        final int       port = addressDelimIdx >= 0 ? Integer.parseInt(address.substring(addressDelimIdx))   : DEFAULT_REGISTRY_PORT;
+        final String    host = addressDelimIdx >= 0 ? address.substring(0, addressDelimIdx)                     : DEFAULT_REGISTRY_HOST;
+        final int       port = addressDelimIdx >= 0 ? Integer.parseInt(address.substring(addressDelimIdx + 1))  : DEFAULT_REGISTRY_PORT;
 
         final Registry registry = LocateRegistry.getRegistry(host, port);
         logger.info("Registry Found");

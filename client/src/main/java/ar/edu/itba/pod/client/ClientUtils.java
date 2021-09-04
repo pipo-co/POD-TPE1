@@ -17,8 +17,8 @@ public final class ClientUtils {
     public static Registry getRegistry(final String registryAddress) throws RemoteException {
         final int addressDelimIdx = registryAddress.indexOf(ADDRESS_DELIM);
 
-        final String    host = addressDelimIdx >= 0 ? registryAddress.substring(0, addressDelimIdx)                  : DEFAULT_REGISTRY_HOST;
-        final int       port = addressDelimIdx >= 0 ? Integer.parseInt(registryAddress.substring(addressDelimIdx))   : DEFAULT_REGISTRY_PORT;
+        final String    host = addressDelimIdx >= 0 ? registryAddress.substring(0, addressDelimIdx)                     : DEFAULT_REGISTRY_HOST;
+        final int       port = addressDelimIdx >= 0 ? Integer.parseInt(registryAddress.substring(addressDelimIdx + 1))  : DEFAULT_REGISTRY_PORT;
 
         return LocateRegistry.getRegistry(host, port);
     }
