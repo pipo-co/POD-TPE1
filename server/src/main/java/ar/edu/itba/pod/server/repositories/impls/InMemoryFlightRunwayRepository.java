@@ -135,10 +135,13 @@ public final class InMemoryFlightRunwayRepository implements FlightRunwayReposit
     }
 
     @Override
-    public void reorderRunways(final Consumer<Flight> unregistrableConsumer) {
+    public long reorderRunways(final Consumer<Flight> unregistrableConsumer) {
 
+        final long[] totalReorderedFlights = {0}; 
         final List<InMemoryFlight> flights = new LinkedList<>();
         final Consumer<InMemoryFlight> flightConsumer = flights::add;
+        final Consumer<Flight> subtracUnregistrableFlightsConsumer = f -> totalReorderedFlights[0]--;
+        final Consumer<Flight> wrappedUnregistrableConsumer = subtracUnregistrableFlightsConsumer.andThen(unregistrableConsumer);
 
         synchronized(runways) {
             runways.values()
@@ -147,8 +150,12 @@ public final class InMemoryFlightRunwayRepository implements FlightRunwayReposit
                 .forEach(runway -> runway.cleanRunway(flightConsumer))
                 ;
 
-            flights.forEach(flight -> registerFlight(flight, unregistrableConsumer));
+            totalReorderedFlights[0] = flights.size();
+
+            flights.forEach(flight -> registerFlight(flight, wrappedUnregistrableConsumer));
         }
+
+        return totalReorderedFlights[0];
     }
 
     private static final Runnable EMPTY_RUNNABLE = () -> {};

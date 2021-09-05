@@ -24,7 +24,7 @@ public interface FlightRunwayRepository {
 
     long getTakeOffOrderCount();
 
-    void reorderRunways(final Consumer<Flight> unregistrableConsumer);
+    long reorderRunways(final Consumer<Flight> unregistrableConsumer);
 
     void registerFlight(final Flight flight, final Consumer<Flight> unregistrableConsumer);
 }

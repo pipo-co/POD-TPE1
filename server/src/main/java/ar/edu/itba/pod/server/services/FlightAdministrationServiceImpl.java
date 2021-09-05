@@ -1,21 +1,22 @@
 package ar.edu.itba.pod.server.services;
 
+import static java.util.Objects.requireNonNull;
+
 import java.rmi.RemoteException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Consumer;
 
-import ar.edu.itba.pod.exceptions.UniqueRunwayNameConstraintException;
 import ar.edu.itba.pod.exceptions.RunwayNotFoundException;
-import ar.edu.itba.pod.exceptions.UnregistrableFlightException;
+import ar.edu.itba.pod.exceptions.UniqueRunwayNameConstraintException;
 import ar.edu.itba.pod.interfaces.FlightAdministrationService;
-import ar.edu.itba.pod.models.FlightRunwayCategory;
 import ar.edu.itba.pod.models.Flight;
 import ar.edu.itba.pod.models.FlightRunway;
+import ar.edu.itba.pod.models.FlightRunwayCategory;
+import ar.edu.itba.pod.models.RunwayReorderSummary;
 import ar.edu.itba.pod.server.repositories.AwaitingFlightsRepository;
 import ar.edu.itba.pod.server.repositories.FlightRunwayRepository;
 import ar.edu.itba.pod.server.repositories.FlightTakeOffRepository;
-
-import static java.util.Objects.*;
 
 public class FlightAdministrationServiceImpl implements FlightAdministrationService {
     private final FlightRunwayRepository        flightRunwayRepository;
@@ -33,8 +34,11 @@ public class FlightAdministrationServiceImpl implements FlightAdministrationServ
     }
 
     @Override
-    public void createRunway(final String name, final FlightRunwayCategory category) throws RemoteException, UniqueRunwayNameConstraintException {
-        flightRunwayRepository.createRunway(name, category);
+    public boolean createRunway(final String name, final FlightRunwayCategory category) throws RemoteException, UniqueRunwayNameConstraintException {
+        
+        final FlightRunway flightRunway = flightRunwayRepository.createRunway(name, category);
+
+        return flightRunway.isOpen();
     }
 
     @Override
@@ -65,14 +69,16 @@ public class FlightAdministrationServiceImpl implements FlightAdministrationServ
     }
 
     @Override
-    public void reorderRunways() throws RemoteException {
-        final List<Flight> unregistrableFlights = new LinkedList<>();
+    public RunwayReorderSummary reorderRunways() throws RemoteException {
+        final List<String> unregistrableFlightsCodes = new LinkedList<>();
+        final Consumer<Flight> addFlightCodeConsumer = f -> unregistrableFlightsCodes.add(f.getCode());
 
-        flightRunwayRepository.reorderRunways(unregistrableFlights::add);
+        final long assignedFlights = flightRunwayRepository.reorderRunways(addFlightCodeConsumer);
 
-        if(!unregistrableFlights.isEmpty()) {
-            unregistrableFlights.forEach(flight -> awaitingFlightsRepository.deleteFlight(flight.getCode()));
-            throw new UnregistrableFlightException(unregistrableFlights);
+        if(!unregistrableFlightsCodes.isEmpty()) {
+            unregistrableFlightsCodes.forEach(awaitingFlightsRepository::deleteFlight);
         }
+
+        return new RunwayReorderSummary(assignedFlights, unregistrableFlightsCodes);
     }
 }

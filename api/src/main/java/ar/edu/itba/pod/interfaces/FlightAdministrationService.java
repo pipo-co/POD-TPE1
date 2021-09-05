@@ -1,17 +1,17 @@
 package ar.edu.itba.pod.interfaces;
 
-import ar.edu.itba.pod.exceptions.RunwayNotFoundException;
-import ar.edu.itba.pod.exceptions.UniqueRunwayNameConstraintException;
-import ar.edu.itba.pod.exceptions.UnregistrableFlightException;
-import ar.edu.itba.pod.models.FlightRunwayCategory;
-
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+
+import ar.edu.itba.pod.exceptions.RunwayNotFoundException;
+import ar.edu.itba.pod.exceptions.UniqueRunwayNameConstraintException;
+import ar.edu.itba.pod.models.FlightRunwayCategory;
+import ar.edu.itba.pod.models.RunwayReorderSummary;
 
 public interface FlightAdministrationService extends Remote {
     String CANONICAL_NAME = "flight_administration";
 
-    void createRunway(final String name, final FlightRunwayCategory category) throws RemoteException, UniqueRunwayNameConstraintException;
+    boolean createRunway(final String name, final FlightRunwayCategory category) throws RemoteException, UniqueRunwayNameConstraintException;
 
     boolean isRunwayOpen(final String name) throws RemoteException, RunwayNotFoundException;
 
@@ -21,5 +21,5 @@ public interface FlightAdministrationService extends Remote {
 
     void orderTakeOff() throws RemoteException;
 
-    void reorderRunways() throws RemoteException, UnregistrableFlightException;
+    RunwayReorderSummary reorderRunways() throws RemoteException;
 }
