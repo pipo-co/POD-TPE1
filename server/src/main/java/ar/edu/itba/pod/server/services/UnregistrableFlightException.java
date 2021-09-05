@@ -18,5 +18,12 @@ public class UnregistrableFlightException extends IllegalStateException {
         flightCodes = flights.stream().map(flight -> flight.getCode()).collect(Collectors.toList());
     }
 
-    // ver get message
+    @Override
+    public String getMessage() {
+        final StringBuilder errorMessage = new StringBuilder();
+        errorMessage.append("Unable to register flights: ");
+        flightCodes.forEach(code -> errorMessage.append(code + "; "));
+        
+        return errorMessage.toString();
+    }
 }

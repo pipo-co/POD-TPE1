@@ -46,7 +46,7 @@ public class FlightRunway {
         }
     }
 
-    public Flight orderTakeOff() {
+    public Flight orderTakeOff(final Consumer<String> removeAwaitingFlight) {
         if(!isOpen()) {
             return null;
         }
@@ -64,6 +64,7 @@ public class FlightRunway {
         if(departedFlight != null) {
             departedFlight.publishRunwayEvent(new FlightRunwayEvent(FLIGHT_TAKE_OFF, departedFlight.getCode(), name, -1));
         }
+        
         if(progressedFlights != null) {
             int flightPos = 0;
             for(final Flight flight : progressedFlights) {
@@ -71,6 +72,8 @@ public class FlightRunway {
                 flightPos++;
             }
         }
+
+        removeAwaitingFlight.accept(departedFlight.getCode());
 
         return departedFlight;
     }

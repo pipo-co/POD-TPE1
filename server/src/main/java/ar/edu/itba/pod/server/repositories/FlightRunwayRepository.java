@@ -23,11 +23,11 @@ public interface FlightRunwayRepository {
      */
     public boolean closeRunway(final String name);
 
-    public void orderTakeOff(final Consumer<FlightTakeOff> callback);
+    public void orderTakeOff(final Consumer<FlightTakeOff> callbackl, final Consumer<String> removeAwaitingFlight);
 
     public long getTakeOffOrderCount();
 
     public void reorderRunways(final Consumer<Flight> unregistrableConsumer);
 
-    public boolean registerFlight(final Flight flight, final Consumer<Flight> unregistrableConsumer);
+    public void registerFlight(final Flight flight, final Consumer<Flight> unregistrableConsumer);
 }
