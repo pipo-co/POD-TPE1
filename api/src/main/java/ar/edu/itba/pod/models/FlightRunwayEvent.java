@@ -8,17 +8,19 @@ public final class FlightRunwayEvent implements Serializable {
     private final EventType type;
     private final String    flight;
     private final String    runway;
+    private final String    destination;
     private final int       position;
 
     public enum EventType {
         RUNWAY_ASSIGNMENT, RUNWAY_PROGRESS, FLIGHT_TAKE_OFF
     }
 
-    public FlightRunwayEvent(final EventType type, final String flight, final String runway, final int position) {
-        this.type       = type;
-        this.flight     = flight;
-        this.runway     = runway;
-        this.position   = position;
+    public FlightRunwayEvent(final EventType type, final String flight, final String runway, final String destination, final int position) {
+        this.type        = type;
+        this.flight      = flight;
+        this.runway      = runway;
+        this.destination = destination;
+        this.position    = position;
     }
 
     public EventType getType() {
@@ -29,6 +31,9 @@ public final class FlightRunwayEvent implements Serializable {
     }
     public String getRunway() {
         return runway;
+    }
+    public String getDestination() {
+        return destination;
     }
     public int getPosition() {
         return position;

@@ -39,7 +39,7 @@ public final class InMemoryFlightRunway implements FlightRunway {
         synchronized(queueLock) {
             final int position = queuedFlights.size();
             queuedFlights.add(flight);
-            flight.publishRunwayEvent(new FlightRunwayEvent(RUNWAY_ASSIGNMENT, flight.getCode(), name, position));
+            flight.publishRunwayEvent(new FlightRunwayEvent(RUNWAY_ASSIGNMENT, flight.getCode(), name, flight.getDestination(), position));
         }
     }
 
@@ -59,12 +59,14 @@ public final class InMemoryFlightRunway implements FlightRunway {
         }
 
         if(departedFlight != null) {
-            departedFlight.publishRunwayEvent(new FlightRunwayEvent(FLIGHT_TAKE_OFF, departedFlight.getCode(), name, -1));
+            departedFlight.publishRunwayEvent(new FlightRunwayEvent(FLIGHT_TAKE_OFF, departedFlight.getCode(), name,
+                    departedFlight.getDestination(), -1));
         }
         if(progressedFlights != null) {
             int flightPos = 0;
             for(final InMemoryFlight flight : progressedFlights) {
-                flight.publishRunwayEvent(new FlightRunwayEvent(RUNWAY_PROGRESS, flight.getCode(), name, flightPos));
+                flight.publishRunwayEvent(new FlightRunwayEvent(RUNWAY_PROGRESS, flight.getCode(), name,
+                        departedFlight.getDestination(),flightPos));
                 flightPos++;
             }
         }
