@@ -5,11 +5,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.rmi.RemoteException;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -116,20 +120,15 @@ public class FlightRunwayRequestServiceImplTest {
     @Test
     void registerMultipleFlights2() throws RemoteException, InterruptedException {
 
-        // pool.submit(Executors.callable(flightCreator));
-
-        // pool.shutdown();
-        // pool.awaitTermination(1000, TimeUnit.SECONDS);
-
-        Thread[] threads = new Thread[] { new Thread(flightCreator1), new Thread(flightCreator2),
-                new Thread(flightCreator3)};
-
-        for (int i = 0; i < threads.length; i++) {
-            threads[i].start();
-        }
-        for (int i = 0; i < threads.length; i++) {
-            threads[i].join();
-        }
+        flightRunwayRepository.createRunway("R1", FlightRunwayCategory.A);
+        flightRunwayRepository.createRunway("R2", FlightRunwayCategory.B);
+        flightRunwayRepository.createRunway("R3", FlightRunwayCategory.F);
+        
+        Collection<Callable<Object>> callables = Arrays.asList(flightCreator1, flightCreator2, flightCreator3).stream().map(r -> Executors.callable(r)).collect(Collectors.toList());
+    
+        pool.invokeAll(callables);
+        pool.shutdown();
+        pool.awaitTermination(100, TimeUnit.SECONDS);
 
         for (int i = 0; i < 1000; i++) {
             checkFlight("flightCode1" + String.valueOf(i));
