@@ -14,7 +14,7 @@ public class UnregistrableFlightException extends IllegalStateException {
         flightCodes = List.of(flight.getCode());
     }
 
-    public UnregistrableFlightException(final List<Flight> flights){
+    public UnregistrableFlightException(final List<Flight> flights) {
         flightCodes = flights
             .stream()
             .map(Flight::getCode)

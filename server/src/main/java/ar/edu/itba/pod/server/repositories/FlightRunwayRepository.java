@@ -4,7 +4,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import ar.edu.itba.pod.exceptions.RunwayNotFoundException;
-import ar.edu.itba.pod.exceptions.UniqueFlightRunwayNameConstraintException;
+import ar.edu.itba.pod.exceptions.UniqueRunwayNameConstraintException;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
 import ar.edu.itba.pod.models.FlightTakeOff;
 import ar.edu.itba.pod.models.Flight;
@@ -12,7 +12,7 @@ import ar.edu.itba.pod.models.FlightRunway;
 
 public interface FlightRunwayRepository {
 
-    FlightRunway createRunway(final String name, final FlightRunwayCategory category) throws UniqueFlightRunwayNameConstraintException;
+    FlightRunway createRunway(final String name, final FlightRunwayCategory category) throws UniqueRunwayNameConstraintException;
 
     Optional<FlightRunway> getRunway(final String name);
 

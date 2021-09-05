@@ -1,7 +1,7 @@
 package ar.edu.itba.pod.interfaces;
 
 import ar.edu.itba.pod.exceptions.RunwayNotFoundException;
-import ar.edu.itba.pod.exceptions.UniqueFlightRunwayNameConstraintException;
+import ar.edu.itba.pod.exceptions.UniqueRunwayNameConstraintException;
 import ar.edu.itba.pod.exceptions.UnregistrableFlightException;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
 
@@ -11,7 +11,7 @@ import java.rmi.RemoteException;
 public interface FlightAdministrationService extends Remote {
     String CANONICAL_NAME = "flight_administration";
 
-    void createRunway(final String name, final FlightRunwayCategory category) throws RemoteException, UniqueFlightRunwayNameConstraintException;
+    void createRunway(final String name, final FlightRunwayCategory category) throws RemoteException, UniqueRunwayNameConstraintException;
 
     boolean isRunwayOpen(final String name) throws RemoteException, RunwayNotFoundException;
 

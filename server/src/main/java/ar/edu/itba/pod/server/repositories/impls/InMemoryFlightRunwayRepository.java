@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import ar.edu.itba.pod.exceptions.RunwayNotFoundException;
-import ar.edu.itba.pod.exceptions.UniqueFlightRunwayNameConstraintException;
+import ar.edu.itba.pod.exceptions.UniqueRunwayNameConstraintException;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
 import ar.edu.itba.pod.models.FlightTakeOff;
 import ar.edu.itba.pod.server.exceptions.UnsupportedFlightException;
@@ -49,11 +49,11 @@ public final class InMemoryFlightRunwayRepository implements FlightRunwayReposit
     private static final StampedLock                        orderCountLock      = new StampedLock();
 
     @Override
-    public FlightRunway createRunway(final String name, final FlightRunwayCategory category) throws UniqueFlightRunwayNameConstraintException {
+    public FlightRunway createRunway(final String name, final FlightRunwayCategory category) throws UniqueRunwayNameConstraintException {
         final InMemoryFlightRunway runway = new InMemoryFlightRunway(name, category);
 
         if(runways.putIfAbsent(name, runway) != null) {
-            throw new UniqueFlightRunwayNameConstraintException();
+            throw new UniqueRunwayNameConstraintException();
         }
 
         return runway;

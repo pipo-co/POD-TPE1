@@ -4,7 +4,7 @@ import java.rmi.RemoteException;
 import java.util.LinkedList;
 import java.util.List;
 
-import ar.edu.itba.pod.exceptions.UniqueFlightRunwayNameConstraintException;
+import ar.edu.itba.pod.exceptions.UniqueRunwayNameConstraintException;
 import ar.edu.itba.pod.exceptions.RunwayNotFoundException;
 import ar.edu.itba.pod.exceptions.UnregistrableFlightException;
 import ar.edu.itba.pod.interfaces.FlightAdministrationService;
@@ -23,8 +23,8 @@ public class FlightAdministrationServiceImpl implements FlightAdministrationServ
     private final AwaitingFlightsRepository     awaitingFlightsRepository;
 
     public FlightAdministrationServiceImpl(
-        final FlightRunwayRepository flightRunwayRepository,
-        final FlightTakeOffRepository flightTakeOffRepository,
+        final FlightRunwayRepository    flightRunwayRepository,
+        final FlightTakeOffRepository   flightTakeOffRepository,
         final AwaitingFlightsRepository awaitingFlightsRepository
     ) {
         this.flightRunwayRepository     = requireNonNull(flightRunwayRepository);
@@ -33,7 +33,7 @@ public class FlightAdministrationServiceImpl implements FlightAdministrationServ
     }
 
     @Override
-    public void createRunway(final String name, final FlightRunwayCategory category) throws RemoteException, UniqueFlightRunwayNameConstraintException {
+    public void createRunway(final String name, final FlightRunwayCategory category) throws RemoteException, UniqueRunwayNameConstraintException {
         flightRunwayRepository.createRunway(name, category);
     }
 
