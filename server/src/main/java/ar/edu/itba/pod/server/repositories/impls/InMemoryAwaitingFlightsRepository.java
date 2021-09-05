@@ -23,7 +23,7 @@ public final class InMemoryAwaitingFlightsRepository implements AwaitingFlightsR
         // Singleton
     }
 
-    private static final Map<String, Flight> flights = Collections.synchronizedMap(new HashMap<>());
+    private static final ConcurrentMap<String, InMemoryFlight> flights = new ConcurrentHashMap<>();
 
     @Override
     public Flight createFlight(final String code, final String airline, final String destination, final FlightRunwayCategory minCategory, final long orderRegisteredOn) throws UniqueFlightCodeConstraintException{
