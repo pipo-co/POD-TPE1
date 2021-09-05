@@ -58,7 +58,7 @@ public final class Server {
         logger.info("Flight Information Service Registered");
 
         final FlightTrackingService trackingService = new FlightTrackingServiceImpl(
-            InMemoryAwaitingFlightsRepository.getInstance()
+            InMemoryAwaitingFlightsRepository   .getInstance()
         );
         registry.rebind(FlightTrackingService.CANONICAL_NAME, UnicastRemoteObject.exportObject(trackingService, 0));
         logger.info("Flight Tracking Service Registered");

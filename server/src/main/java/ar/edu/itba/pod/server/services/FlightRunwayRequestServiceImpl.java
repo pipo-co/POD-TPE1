@@ -26,6 +26,9 @@ public class FlightRunwayRequestServiceImpl implements FlightRunwayRequestServic
     public void registerFlight(final String code, final String airline, final String destinationAirport, final FlightRunwayCategory minCategory) throws RemoteException, UniqueFlightCodeConstraintException {
         final Flight flight = awaitingFlightRepository.createFlight(code, airline, destinationAirport, minCategory, flightRunwayRepository.getTakeOffOrderCount());
         
-        flightRunwayRepository.registerFlight(flight, UnregistrableFlightException::new);
+        flightRunwayRepository.registerFlight(flight, unregisteredFlight -> {
+            awaitingFlightRepository.deleteFlight(unregisteredFlight.getCode());
+            throw new UnregistrableFlightException(unregisteredFlight);
+        });
     }
 }
