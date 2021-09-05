@@ -7,9 +7,7 @@ import static ar.edu.itba.pod.models.FlightRunwayEvent.EventType.RUNWAY_PROGRESS
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Consumer;
 
 import ar.edu.itba.pod.models.FlightRunwayCategory;
@@ -25,9 +23,7 @@ public final class InMemoryFlightRunway implements FlightRunway {
     private       boolean               open;           // ¡No acceder directamente! Sincronizado
 
     private final Object                queueLock;
-    private final ReadWriteLock         openLock;       // TODO(tobi): Mejor lock?
-    private final Lock                  openReadLock;
-    private final Lock                  openWriteLock;
+    private final StampedLock           openLock;
 
     public InMemoryFlightRunway(final String name, final FlightRunwayCategory category) {
         this.name           = name;
@@ -36,9 +32,7 @@ public final class InMemoryFlightRunway implements FlightRunway {
         this.queuedFlights  = new LinkedList<>();
 
         this.queueLock      = new Object();
-        this.openLock       = new ReentrantReadWriteLock();
-        this.openReadLock   = this.openLock.readLock();
-        this.openWriteLock  = this.openLock.writeLock();
+        this.openLock       = new StampedLock();
     }
 
     public void registerFlight(final InMemoryFlight flight) {
@@ -116,21 +110,26 @@ public final class InMemoryFlightRunway implements FlightRunway {
 
     @Override
     public boolean isOpen() {
-        final boolean ret;
-        openReadLock.lock();
-        try {
-            ret = open;
-        } finally {
-            openReadLock.unlock();
+        long stamp = openLock.tryOptimisticRead();
+        boolean ret = open;
+
+        if(!openLock.validate(stamp)) {
+            stamp = openLock.readLock();
+            try {
+                ret = open;
+            } finally {
+                openLock.unlock(stamp);
+            }
         }
+
         return ret;
     }
     public void setOpen(final boolean open) {
-        openWriteLock.lock();
+        final long stamp = openLock.writeLock();
         try {
             this.open = open;
         } finally {
-            openWriteLock.unlock();
+            openLock.unlock(stamp);
         }
     }
     public void open() {
