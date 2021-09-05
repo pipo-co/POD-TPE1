@@ -10,14 +10,16 @@ import ar.edu.itba.pod.server.repositories.impls.InMemoryFlightRunwayRepository;
 
 import java.rmi.RemoteException;
 
+import static java.util.Objects.*;
+
 public class FlightRunwayRequestServiceImpl implements FlightRunwayRequestService {
 
-    private final FlightRunwayRepository flightRunwayRepository;
+    private final FlightRunwayRepository    flightRunwayRepository;
     private final AwaitingFlightsRepository awaitingFlightRepository;
 
-    public FlightRunwayRequestServiceImpl() {
-        this.flightRunwayRepository = InMemoryFlightRunwayRepository.getInstance();
-        this.awaitingFlightRepository = InMemoryAwaitingFlightsRepository.getInstance();
+    public FlightRunwayRequestServiceImpl(final FlightRunwayRepository flightRunwayRepository, final AwaitingFlightsRepository awaitingFlightRepository) {
+        this.flightRunwayRepository     = requireNonNull(flightRunwayRepository);
+        this.awaitingFlightRepository   = requireNonNull(awaitingFlightRepository);
     }
 
     @Override

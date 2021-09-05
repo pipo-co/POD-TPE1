@@ -4,6 +4,9 @@ import ar.edu.itba.pod.interfaces.FlightAdministrationService;
 import ar.edu.itba.pod.interfaces.FlightInfoService;
 import ar.edu.itba.pod.interfaces.FlightRunwayRequestService;
 import ar.edu.itba.pod.interfaces.FlightTrackingService;
+import ar.edu.itba.pod.server.models.repositories.impls.InMemoryAwaitingFlightsRepository;
+import ar.edu.itba.pod.server.models.repositories.impls.InMemoryFlightRunwayRepository;
+import ar.edu.itba.pod.server.models.repositories.impls.InMemoryFlightTakeOffRepository;
 import ar.edu.itba.pod.server.services.FlightAdministrationServiceImpl;
 import ar.edu.itba.pod.server.services.FlightInfoServiceImpl;
 import ar.edu.itba.pod.server.services.FlightRunwayRequestServiceImpl;
@@ -52,7 +55,10 @@ public final class Server {
         registry.rebind(FlightTrackingService.CANONICAL_NAME, UnicastRemoteObject.exportObject(trackingService, 0));
         logger.info("Flight Tracking Service Registered");
 
-        final FlightRunwayRequestService trackRequestService = new FlightRunwayRequestServiceImpl();
+        final FlightRunwayRequestService trackRequestService = new FlightRunwayRequestServiceImpl(
+            InMemoryFlightRunwayRepository      .getInstance(),
+            InMemoryAwaitingFlightsRepository   .getInstance()
+        );
         registry.rebind(FlightRunwayRequestService.CANONICAL_NAME, UnicastRemoteObject.exportObject(trackRequestService, 0));
         logger.info("Flight Runway Request Service Registered");
 
