@@ -1,18 +1,19 @@
 package ar.edu.itba.pod.server.models;
 
-import ar.edu.itba.pod.models.FlightRunwayCategory;
-import ar.edu.itba.pod.models.FlightRunwayEvent;
+import static ar.edu.itba.pod.models.FlightRunwayEvent.EventType.FLIGHT_TAKE_OFF;
+import static ar.edu.itba.pod.models.FlightRunwayEvent.EventType.RUNWAY_ASSIGNMENT;
+import static ar.edu.itba.pod.models.FlightRunwayEvent.EventType.RUNWAY_PROGRESS;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 
-import static ar.edu.itba.pod.models.FlightRunwayEvent.EventType.*;
+import ar.edu.itba.pod.models.FlightRunwayCategory;
+import ar.edu.itba.pod.models.FlightRunwayEvent;
 
 public class FlightRunway {
     private final String                name;
@@ -80,6 +81,12 @@ public class FlightRunway {
                 queuedFlights.forEach(callback);
             }
             queuedFlights.clear();
+        }
+    }
+
+    public int awaitingFlights() {
+        synchronized(queueLock) {
+            return queuedFlights.size();
         }
     }
 

@@ -1,7 +1,10 @@
 package ar.edu.itba.pod.server.models;
 
 import ar.edu.itba.pod.callbacks.FlightRunwayEventConsumer;
+import ar.edu.itba.pod.models.FlightRunwayCategory;
 import ar.edu.itba.pod.models.FlightRunwayEvent;
+import ar.edu.itba.pod.models.FlightTakeOff;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,15 +21,29 @@ public final class Flight {
     private final String                            code;
     private final String                            destination;
     private final long                              orderRegisteredOn;
+    private final FlightRunwayCategory              minCategory;
     private final List<FlightRunwayEventConsumer>   runwayEventSubscribers;
 
-    public Flight(final String airline, final String code, final String destination, final long orderRegisteredOn) {
+    public Flight(final String airline, final String code, final String destination, final FlightRunwayCategory minCategory, final long orderRegisteredOn) {
         this.airline                    = airline;
         this.code                       = code;
         this.destination                = destination;
+        this.minCategory                = minCategory;
         this.orderRegisteredOn          = orderRegisteredOn;
         this.runwayEventSubscribers     = Collections.synchronizedList(new LinkedList<>());
     }
+
+    public FlightTakeOff toTakeOff(final long orderTakeOff, final String runway) {
+
+        return new FlightTakeOff(
+            orderTakeOff - orderRegisteredOn - 1, 
+            runway, 
+            code, 
+            airline,
+            destination
+        );
+    }
+
 
     public void publishRunwayEvent(final FlightRunwayEvent event) {
         final List<Thread> callbackTasks = new ArrayList<>(runwayEventSubscribers.size());
@@ -60,6 +77,10 @@ public final class Flight {
 
     public String getDestination() {
         return destination;
+    }
+
+    public FlightRunwayCategory getMinCategory() {
+        return minCategory;
     }
 
     public long getOrderRegisteredOn() {

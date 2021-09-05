@@ -10,11 +10,11 @@ public interface FlightAdministrationService extends Remote {
 
     void createRunway(final String name, final FlightRunwayCategory category) throws RemoteException;
 
-    boolean isRunwayOpen(final String runway) throws RemoteException;
+    boolean isRunwayOpen(final String name) throws RemoteException;
 
-    void openRunway(final String runway) throws RemoteException;
+    void openRunway(final String name) throws RemoteException;
 
-    void closeRunway(final String runway) throws RemoteException;
+    void closeRunway(final String name) throws RemoteException;
 
     void orderTakeOff() throws RemoteException;
 
