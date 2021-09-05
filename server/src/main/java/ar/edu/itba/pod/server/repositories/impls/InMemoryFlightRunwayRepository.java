@@ -23,17 +23,7 @@ import ar.edu.itba.pod.server.models.InMemoryFlight;
 import ar.edu.itba.pod.server.models.InMemoryFlightRunway;
 import ar.edu.itba.pod.server.repositories.FlightRunwayRepository;
 
-public final class InMemoryFlightRunwayRepository implements FlightRunwayRepository {
-
-    private static final InMemoryFlightRunwayRepository instance = new InMemoryFlightRunwayRepository();
-
-    public static InMemoryFlightRunwayRepository getInstance() {
-        return instance;
-    }
-
-    private InMemoryFlightRunwayRepository() {
-        // Singleton
-    }
+public class InMemoryFlightRunwayRepository implements FlightRunwayRepository {
 
     private static final Comparator<FlightRunway> RUNWAY_COMPARATOR = Comparator
         .comparing(FlightRunway::getCategory)
@@ -44,9 +34,15 @@ public final class InMemoryFlightRunwayRepository implements FlightRunwayReposit
         .thenComparing(RUNWAY_COMPARATOR)
         ;
 
-    private static final Map<String, InMemoryFlightRunway>  runways             = Collections.synchronizedMap(new HashMap<>());
-    private static       long                               takeOffOrderCount   = 0L;
-    private static final StampedLock                        orderCountLock      = new StampedLock();
+    private final Map<String, InMemoryFlightRunway>  runways;
+    private       long                               takeOffOrderCount;
+    private final StampedLock                        orderCountLock;
+
+    public InMemoryFlightRunwayRepository() {
+        this.runways            = Collections.synchronizedMap(new HashMap<>());
+        this.takeOffOrderCount  = 0L;
+        this.orderCountLock     = new StampedLock();
+    }
 
     @Override
     public FlightRunway createRunway(final String name, final FlightRunwayCategory category) throws UniqueRunwayNameConstraintException {

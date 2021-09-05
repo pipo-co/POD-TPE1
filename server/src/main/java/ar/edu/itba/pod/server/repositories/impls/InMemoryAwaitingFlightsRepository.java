@@ -12,18 +12,12 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public final class InMemoryAwaitingFlightsRepository implements AwaitingFlightsRepository {
+public class InMemoryAwaitingFlightsRepository implements AwaitingFlightsRepository {
+    private final ConcurrentMap<String, InMemoryFlight> flights;
 
-    private static final InMemoryAwaitingFlightsRepository instance = new InMemoryAwaitingFlightsRepository();
-    public static InMemoryAwaitingFlightsRepository getInstance() {
-        return instance;
+    public InMemoryAwaitingFlightsRepository() {
+        this.flights = new ConcurrentHashMap<>();
     }
-
-    private InMemoryAwaitingFlightsRepository() {
-        // Singleton
-    }
-
-    private static final ConcurrentMap<String, InMemoryFlight> flights = new ConcurrentHashMap<>();
 
     @Override
     public Flight createFlight(final String code, final String airline, final String destination, final FlightRunwayCategory minCategory, final long orderRegisteredOn) throws UniqueFlightCodeConstraintException{

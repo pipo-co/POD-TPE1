@@ -4,6 +4,9 @@ import ar.edu.itba.pod.interfaces.FlightAdministrationService;
 import ar.edu.itba.pod.interfaces.FlightInfoService;
 import ar.edu.itba.pod.interfaces.FlightRunwayRequestService;
 import ar.edu.itba.pod.interfaces.FlightTrackingService;
+import ar.edu.itba.pod.server.repositories.AwaitingFlightsRepository;
+import ar.edu.itba.pod.server.repositories.FlightRunwayRepository;
+import ar.edu.itba.pod.server.repositories.FlightTakeOffRepository;
 import ar.edu.itba.pod.server.repositories.impls.InMemoryAwaitingFlightsRepository;
 import ar.edu.itba.pod.server.repositories.impls.InMemoryFlightRunwayRepository;
 import ar.edu.itba.pod.server.repositories.impls.InMemoryFlightTakeOffRepository;
@@ -43,29 +46,26 @@ public final class Server {
         final Registry registry = LocateRegistry.getRegistry(host, port);
         logger.info("Registry Found");
 
+        final FlightRunwayRepository    flightRunwayRepository      = new InMemoryFlightRunwayRepository();
+        final FlightTakeOffRepository   flightTakeOffRepository     = new InMemoryFlightTakeOffRepository();
+        final AwaitingFlightsRepository awaitingFlightsRepository   = new InMemoryAwaitingFlightsRepository();
+
         final FlightAdministrationService adminService = new FlightAdministrationServiceImpl(
-            InMemoryFlightRunwayRepository      .getInstance(),
-            InMemoryFlightTakeOffRepository     .getInstance(),
-            InMemoryAwaitingFlightsRepository   .getInstance()
+            flightRunwayRepository, flightTakeOffRepository, awaitingFlightsRepository
         );
         registry.rebind(FlightAdministrationService.CANONICAL_NAME, UnicastRemoteObject.exportObject(adminService, 0));
         logger.info("Flight Administration Service Registered");
 
-        final FlightInfoService infoService = new FlightInfoServiceImpl(
-            InMemoryFlightTakeOffRepository      .getInstance()
-        );
+        final FlightInfoService infoService = new FlightInfoServiceImpl(flightTakeOffRepository);
         registry.rebind(FlightInfoService.CANONICAL_NAME, UnicastRemoteObject.exportObject(infoService, 0));
         logger.info("Flight Information Service Registered");
 
-        final FlightTrackingService trackingService = new FlightTrackingServiceImpl(
-            InMemoryAwaitingFlightsRepository   .getInstance()
-        );
+        final FlightTrackingService trackingService = new FlightTrackingServiceImpl(awaitingFlightsRepository);
         registry.rebind(FlightTrackingService.CANONICAL_NAME, UnicastRemoteObject.exportObject(trackingService, 0));
         logger.info("Flight Tracking Service Registered");
 
         final FlightRunwayRequestService trackRequestService = new FlightRunwayRequestServiceImpl(
-            InMemoryFlightRunwayRepository      .getInstance(),
-            InMemoryAwaitingFlightsRepository   .getInstance()
+            flightRunwayRepository, awaitingFlightsRepository
         );
         registry.rebind(FlightRunwayRequestService.CANONICAL_NAME, UnicastRemoteObject.exportObject(trackRequestService, 0));
         logger.info("Flight Runway Request Service Registered");

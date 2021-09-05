@@ -1,11 +1,6 @@
 package ar.edu.itba.pod.services;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.rmi.RemoteException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -13,7 +8,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import ar.edu.itba.pod.exceptions.UniqueFlightCodeConstraintException;
@@ -27,13 +24,22 @@ import ar.edu.itba.pod.server.repositories.impls.InMemoryAwaitingFlightsReposito
 import ar.edu.itba.pod.server.repositories.impls.InMemoryFlightRunwayRepository;
 import ar.edu.itba.pod.server.services.FlightRunwayRequestServiceImpl;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 public class FlightRunwayRequestServiceImplTest {
 
-    private final AwaitingFlightsRepository awaitingFlightsRepository = InMemoryAwaitingFlightsRepository.getInstance();
-    private final FlightRunwayRepository flightRunwayRepository = InMemoryFlightRunwayRepository.getInstance();
+    private FlightRunwayRepository        flightRunwayRepository;
+    private AwaitingFlightsRepository     awaitingFlightsRepository;
+    private FlightRunwayRequestService    trackRunwayRequestService;
 
-    final FlightRunwayRequestService trackRunwayRequestService = new FlightRunwayRequestServiceImpl(
-            flightRunwayRepository, awaitingFlightsRepository);
+    @BeforeEach
+    private void beforeEach() {
+        this.flightRunwayRepository     = new InMemoryFlightRunwayRepository();
+        this.awaitingFlightsRepository  = new InMemoryAwaitingFlightsRepository();
+        this.trackRunwayRequestService  = new FlightRunwayRequestServiceImpl(
+            flightRunwayRepository, awaitingFlightsRepository
+        );
+    }
 
     private final ExecutorService pool = Executors.newCachedThreadPool();
 
@@ -77,7 +83,6 @@ public class FlightRunwayRequestServiceImplTest {
         flightRunwayRepository.createRunway("R1", FlightRunwayCategory.A);
         assertThrows(UnregistrableFlightException.class,
                 () -> trackRunwayRequestService.registerFlight("flight1", "COR2", "Latam", FlightRunwayCategory.F));
-
     }
 
     @Test
@@ -115,30 +120,35 @@ public class FlightRunwayRequestServiceImplTest {
         flightRunwayRepository.createRunway("R1", FlightRunwayCategory.A);
         flightRunwayRepository.createRunway("R2", FlightRunwayCategory.B);
         flightRunwayRepository.createRunway("R3", FlightRunwayCategory.F);
-        
-        Collection<Callable<Object>> callables = Arrays.asList(flightCreator1, flightCreator2, flightCreator3).stream().map(r -> Executors.callable(r)).collect(Collectors.toList());
-    
+
+        final Collection<Callable<Object>> callables = Stream
+            .of(flightCreator1, flightCreator2, flightCreator3)
+            .map(Executors::callable)
+            .collect(Collectors.toList())
+            ;
+
         pool.invokeAll(callables);
         pool.shutdown();
-        pool.awaitTermination(10, TimeUnit.SECONDS);
-
-        for (int i = 0; i < 1000; i++) {
-            checkFlight("flightCode1" + String.valueOf(i));
-        }
-        for (int i = 0; i < 1000; i++) {
-            checkFlight("flightCode2" + String.valueOf(i));
-        }
-        for (int i = 0; i < 1000; i++) {
-            checkFlight("flightCode3" + String.valueOf(i));
+        if(!pool.awaitTermination(100, TimeUnit.SECONDS)) {
+            fail("Threads no terminaron");
         }
 
+        for (int i = 0; i < 1000; i++) {
+            checkFlight("flightCode1" + i);
+        }
+        for (int i = 0; i < 1000; i++) {
+            checkFlight("flightCode2" + i);
+        }
+        for (int i = 0; i < 1000; i++) {
+            checkFlight("flightCode3" + i);
+        }
     }
 
     private void registerFlight(String code, String destiny, String airline, FlightRunwayCategory category) {
         try {
             trackRunwayRequestService.registerFlight(code, destiny, airline, category);
-        } catch (Exception e) {
-            // TODO: handle exception
+        } catch(final Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -147,24 +157,24 @@ public class FlightRunwayRequestServiceImplTest {
         Optional<Flight> flightOptional = awaitingFlightsRepository.getFlight(code);
 
         assertTrue(flightOptional.isPresent());
-        assertEquals(code, awaitingFlightsRepository.getFlight(code).get().getCode());
+        assertEquals(code, flightOptional.get().getCode());
     }
 
     private final Runnable flightCreator1 = () -> {
         for (int i = 0; i < 1000; i++) {
-            registerFlight("flightCode1" + String.valueOf(i), "COR", "Aerolineas Argentinas", FlightRunwayCategory.F);
+            registerFlight("flightCode1" + i, "COR", "Aerolineas Argentinas", FlightRunwayCategory.F);
         }
     };
 
     private final Runnable flightCreator2 = () -> {
         for (int i = 0; i < 1000; i++) {
-            registerFlight("flightCode2" + String.valueOf(i), "COR", "Aerolineas Argentinas", FlightRunwayCategory.F);
+            registerFlight("flightCode2" + i, "COR", "Aerolineas Argentinas", FlightRunwayCategory.F);
         }
     };
 
     private final Runnable flightCreator3 = () -> {
         for (int i = 0; i < 1000; i++) {
-            registerFlight("flightCode3" + String.valueOf(i), "COR", "Aerolineas Argentinas", FlightRunwayCategory.F);
+            registerFlight("flightCode3" + i, "COR", "Aerolineas Argentinas", FlightRunwayCategory.F);
         }
     };
 }

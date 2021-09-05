@@ -8,18 +8,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public final class InMemoryFlightTakeOffRepository implements FlightTakeOffRepository {
+public class InMemoryFlightTakeOffRepository implements FlightTakeOffRepository {
 
-    private static final InMemoryFlightTakeOffRepository instance = new InMemoryFlightTakeOffRepository();
-    public static InMemoryFlightTakeOffRepository getInstance() {
-        return instance;
+    private final List<FlightTakeOff> takeOffs;
+
+    public InMemoryFlightTakeOffRepository() {
+        this.takeOffs = Collections.synchronizedList(new LinkedList<>());
     }
-
-    private InMemoryFlightTakeOffRepository() {
-        // Singleton
-    }
-
-    private static final List<FlightTakeOff> takeOffs = Collections.synchronizedList(new LinkedList<>());
 
     public void addTakeOff(final FlightTakeOff takeOff) {
         takeOffs.add(takeOff);
