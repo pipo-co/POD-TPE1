@@ -25,9 +25,9 @@ public final class InMemoryFlight implements Flight {
     private final FlightRunwayCategory              minCategory;
     private final List<FlightRunwayEventConsumer>   runwayEventSubscribers;
 
-    public InMemoryFlight(final String airline, final String code, final String destination, final FlightRunwayCategory minCategory, final long orderRegisteredOn) {
-        this.airline                    = airline;
+    public InMemoryFlight(final String code, final String airline, final String destination, final FlightRunwayCategory minCategory, final long orderRegisteredOn) {
         this.code                       = code;
+        this.airline                    = airline;
         this.destination                = destination;
         this.minCategory                = minCategory;
         this.orderRegisteredOn          = orderRegisteredOn;

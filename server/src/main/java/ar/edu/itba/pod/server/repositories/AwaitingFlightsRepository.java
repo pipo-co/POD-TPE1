@@ -12,9 +12,9 @@ public interface AwaitingFlightsRepository {
 
     Flight createFlight(final String code, final String airline, final String destination, final FlightRunwayCategory minCategory, final long orderRegisteredOn) throws UniqueFlightCodeConstraintException;
 
-    Optional<Flight> getFlight(final String flight);
+    Optional<Flight> getFlight(final String code);
 
-    void deleteFlight(final String flight);
+    void deleteFlight(final String code);
 
     void addSubscriptionToFlight(final String flightCode, final FlightRunwayEventConsumer callback) throws FlightNotFoundException;
 }

@@ -35,15 +35,13 @@ public final class InMemoryAwaitingFlightsRepository implements AwaitingFlightsR
 
         return flight;
     }
-
-    @Override
-    public Optional<Flight> getFlight(final String flight) {
-        return Optional.ofNullable(flights.get(flight));
+    
+    public Optional<Flight> getFlight(final String code) {
+        return Optional.ofNullable(flights.get(code));
     }
 
-    @Override
-    public void deleteFlight(final String flight) {
-        flights.remove(flight);
+    public void deleteFlight(final String code) {
+        flights.remove(code);
     }
 
     @Override
