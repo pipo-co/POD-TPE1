@@ -29,6 +29,7 @@ target/
 .settings
 .project
 .vscode/
+.DS_Store
 
 # IntelliJ
 .idea/
