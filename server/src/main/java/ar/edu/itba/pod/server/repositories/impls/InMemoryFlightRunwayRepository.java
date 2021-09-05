@@ -6,29 +6,26 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import ar.edu.itba.pod.exceptions.RunwayNotFoundException;
+import ar.edu.itba.pod.exceptions.UniqueFlightRunwayNameConstraintException;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
 import ar.edu.itba.pod.models.FlightTakeOff;
-import ar.edu.itba.pod.server.models.Flight;
-import ar.edu.itba.pod.server.models.FlightRunway;
+import ar.edu.itba.pod.server.exceptions.UnsupportedFlightException;
+import ar.edu.itba.pod.models.Flight;
+import ar.edu.itba.pod.models.FlightRunway;
+import ar.edu.itba.pod.server.models.InMemoryFlight;
+import ar.edu.itba.pod.server.models.InMemoryFlightRunway;
 import ar.edu.itba.pod.server.repositories.FlightRunwayRepository;
 
 public final class InMemoryFlightRunwayRepository implements FlightRunwayRepository {
 
     private static final InMemoryFlightRunwayRepository instance = new InMemoryFlightRunwayRepository();
-    private static final Comparator<FlightRunway> findRunwayComparator = Comparator
-        .comparing(FlightRunway::awaitingFlights)
-        .thenComparing(Comparator.comparing(FlightRunway::getCategory))
-        .thenComparing(Comparator.comparing(FlightRunway::getName))
-        ;
-    private static final Comparator<FlightRunway> runwayOrderComparator = Comparator
-        .comparing(FlightRunway::getCategory)
-        .thenComparing(Comparator.comparing(FlightRunway::getName))
-        ;
 
     public static InMemoryFlightRunwayRepository getInstance() {
         return instance;
@@ -38,56 +35,59 @@ public final class InMemoryFlightRunwayRepository implements FlightRunwayReposit
         // Singleton
     }
 
-    private static Map<String, FlightRunway> runways = Collections.synchronizedMap(new HashMap<>());
-    private static long takeOffOrderCount = 0L;
-    private static StampedLock orderCountLock = new StampedLock();
+    private static final Comparator<FlightRunway> RUNWAY_COMPARATOR = Comparator
+        .comparing(FlightRunway::getCategory)
+        .thenComparing(FlightRunway::getName)
+        ;
+    private static final Comparator<FlightRunway> EMPTIER_RUNWAY_COMPARATOR = Comparator
+        .comparing(FlightRunway::awaitingFlights)
+        .thenComparing(RUNWAY_COMPARATOR)
+        ;
 
-    public boolean createRunway(final String name, final FlightRunwayCategory category) {
+    private static final Map<String, InMemoryFlightRunway>  runways             = Collections.synchronizedMap(new HashMap<>());
+    private static       long                               takeOffOrderCount   = 0L;
+    private static final StampedLock                        orderCountLock      = new StampedLock();
 
-        if (runways.containsKey(name)) {
-            return false;
+    @Override
+    public FlightRunway createRunway(final String name, final FlightRunwayCategory category) throws UniqueFlightRunwayNameConstraintException {
+        final InMemoryFlightRunway runway = new InMemoryFlightRunway(name, category);
+
+        if(runways.putIfAbsent(name, runway) != null) {
+            throw new UniqueFlightRunwayNameConstraintException();
         }
 
-        runways.put(name, new FlightRunway(name, category));
-        return true;
+        return runway;
     }
 
     @Override
-    public Optional<Boolean> isRunwayOpen(final String name) {
-        return Optional.ofNullable(runways.get(name)).map(FlightRunway::isOpen);
+    public Optional<FlightRunway> getRunway(final String name) {
+        return Optional.ofNullable(runways.get(name));
     }
 
     @Override
-    public boolean openRunway(final String name) {
-
-        final FlightRunway runway = runways.get(name);
-
-        if (runway == null) {
-            return false;
+    public void openRunway(final String name) throws RunwayNotFoundException {
+        final InMemoryFlightRunway runway = runways.get(name);
+        if(runway == null) {
+            throw new RunwayNotFoundException();
         }
 
         runway.open();
-        return true;
     }
 
     @Override
-    public boolean closeRunway(final String name) {
-
-        final FlightRunway runway = runways.get(name);
-
-        if (runway == null) {
-            return false;
+    public void closeRunway(final String name) throws RunwayNotFoundException {
+        final InMemoryFlightRunway runway = runways.get(name);
+        if(runway == null) {
+            throw new RunwayNotFoundException();
         }
 
         runway.close();
-        return true;
     }
 
     private long incrementOrderCount() {
-
         final long newValue;
-        final long stamp = orderCountLock.writeLock();
 
+        final long stamp = orderCountLock.writeLock();
         try {
             takeOffOrderCount++;
             newValue = takeOffOrderCount;
@@ -98,66 +98,84 @@ public final class InMemoryFlightRunwayRepository implements FlightRunwayReposit
         return newValue;
     }
 
+    @Override
     public long getTakeOffOrderCount() {
+        long stamp = orderCountLock.tryOptimisticRead();
+        long ret = takeOffOrderCount;
 
-        final long stamp = orderCountLock.tryOptimisticRead();
-        final long value = takeOffOrderCount;
+        if(!orderCountLock.validate(stamp)) {
 
-        if (!orderCountLock.validate(stamp)) {
-            final long second_stamp = orderCountLock.readLock();
-            final long second_value;
-
+            stamp = orderCountLock.readLock();
             try {
-                second_value = takeOffOrderCount;
+                ret = takeOffOrderCount;
             } finally {
-                orderCountLock.unlockRead(second_stamp); 
+                orderCountLock.unlockRead(stamp);
             }
-
-            return second_value;
         }
-        
-        return value;
+
+        return ret;
     }
 
     @Override
-    public void orderTakeOff(final Consumer<FlightTakeOff> callback, final Consumer<String> removeAwaitingFlight) {
-
+    public void orderTakeOff(final Consumer<FlightTakeOff> takeOffConsumer) {
         final List<FlightTakeOff> takeOffs;
 
-        synchronized (runways) {
-
+        synchronized(runways) {
             final long currentOrderCount = incrementOrderCount();
 
-            takeOffs = runways.values().stream()
-                    .map(runway -> runway.orderTakeOff(removeAwaitingFlight).toTakeOff(currentOrderCount, runway.getName()))
-                    .collect(Collectors.toList());
+            takeOffs = runways.values()
+                .stream()
+                .map(runway -> runway.orderTakeOff(currentOrderCount))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList())
+                ;
         }
 
-        takeOffs.forEach(callback);
+        takeOffs.forEach(takeOffConsumer);
     }
 
     @Override
     public void reorderRunways(final Consumer<Flight> unregistrableConsumer) {
 
-        final List<Flight> flights = new LinkedList<>();
+        final List<InMemoryFlight> flights = new LinkedList<>();
+        final Consumer<InMemoryFlight> flightConsumer = flights::add;
 
-        synchronized (runways) {
-            runways.values().stream()
-                    .sorted(runwayOrderComparator)
-                    .forEach(runway -> runway.cleanRunway(flights::add));
+        synchronized(runways) {
+            runways.values()
+                .stream()
+                .sorted(RUNWAY_COMPARATOR)
+                .forEach(runway -> runway.cleanRunway(flightConsumer))
+                ;
 
-            flights.forEach(flight -> registerFlight(flight, unregistrableConsumer)); // Que pasa si hay uno de estos vuelos que no se peude insertar (pistas cerradas) 
+            flights.forEach(flight -> registerFlight(flight, unregistrableConsumer));
+        }
+    }
+
+    private static final Runnable EMPTY_RUNNABLE = () -> {};
+
+    private void registerFlight(final InMemoryFlight flight, final Consumer<Flight> unregistrableConsumer) {
+        final Runnable unregistrableRunnable = unregistrableConsumer == null ?
+            EMPTY_RUNNABLE :
+            () -> unregistrableConsumer.accept(flight)
+            ;
+
+        synchronized(runways) {
+            runways.values()
+                .stream()
+                .filter(FlightRunway::isOpen)
+                .filter(runway -> runway.getCategory().compareTo(flight.getMinCategory()) >= 0)
+                .min(EMPTIER_RUNWAY_COMPARATOR)
+                .ifPresentOrElse(runway -> runway.registerFlight(flight), unregistrableRunnable)
+            ;
         }
     }
 
     @Override
-    public void registerFlight(final Flight flight, final Consumer<Flight> unregistrableConsumer) {
-
-        synchronized (runways) {
-            runways.values().stream().filter(FlightRunway::isOpen)
-                    .filter(runway -> runway.getCategory().compareTo(flight.getMinCategory()) >= 0)
-                    .sorted(findRunwayComparator)
-                    .findFirst().ifPresentOrElse(runway -> runway.registerFlight(flight), () -> unregistrableConsumer.accept(flight));
+    public void registerFlight(final Flight flight, final Consumer<Flight> unregistrableConsumer) throws UnsupportedFlightException {
+        if(!(flight instanceof InMemoryFlight)) {
+            // Solo aceptamos flights de este tipo
+            throw new UnsupportedFlightException();
         }
+        registerFlight((InMemoryFlight) flight, unregistrableConsumer);
     }
 }

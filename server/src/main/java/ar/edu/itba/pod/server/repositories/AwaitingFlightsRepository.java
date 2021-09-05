@@ -1,14 +1,16 @@
 package ar.edu.itba.pod.server.repositories;
 
-import ar.edu.itba.pod.server.models.Flight;
+import ar.edu.itba.pod.exceptions.UniqueFlightCodeConstraintException;
+import ar.edu.itba.pod.models.Flight;
+import ar.edu.itba.pod.models.FlightRunwayCategory;
+
+import java.util.Optional;
 
 public interface AwaitingFlightsRepository {
 
-    void addFlight(final Flight flight);
+    Flight createFlight(final String code, final String airline, final String destination, final FlightRunwayCategory minCategory, final long orderRegisteredOn) throws UniqueFlightCodeConstraintException;
 
-    Flight getFlight(final String flight);
+    Optional<Flight> getFlight(final String flight);
 
-    void removeFlight(final String flight);
-
-    boolean containsFlight(final String flight);
+    void deleteFlight(final String flight);
 }

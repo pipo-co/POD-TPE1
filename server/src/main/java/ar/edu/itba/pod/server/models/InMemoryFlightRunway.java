@@ -14,19 +14,22 @@ import java.util.function.Consumer;
 
 import ar.edu.itba.pod.models.FlightRunwayCategory;
 import ar.edu.itba.pod.models.FlightRunwayEvent;
+import ar.edu.itba.pod.models.FlightTakeOff;
+import ar.edu.itba.pod.models.Flight;
+import ar.edu.itba.pod.models.FlightRunway;
 
-public class FlightRunway {
+public final class InMemoryFlightRunway implements FlightRunway {
     private final String                name;
     private final FlightRunwayCategory  category;
-    private final Queue<Flight>         queuedFlights;
-    private boolean                     open;           // ¡No acceder directamente! Sincronizado
+    private final Queue<InMemoryFlight> queuedFlights;
+    private       boolean               open;           // ¡No acceder directamente! Sincronizado
 
     private final Object                queueLock;
     private final ReadWriteLock         openLock;       // TODO(tobi): Mejor lock?
     private final Lock                  openReadLock;
     private final Lock                  openWriteLock;
 
-    public FlightRunway(final String name, final FlightRunwayCategory category) {
+    public InMemoryFlightRunway(final String name, final FlightRunwayCategory category) {
         this.name           = name;
         this.category       = category;
         this.open           = true;
@@ -38,7 +41,7 @@ public class FlightRunway {
         this.openWriteLock  = this.openLock.writeLock();
     }
 
-    public void registerFlight(final Flight flight) {
+    public void registerFlight(final InMemoryFlight flight) {
         synchronized(queueLock) {
             final int position = queuedFlights.size();
             queuedFlights.add(flight);
@@ -46,14 +49,14 @@ public class FlightRunway {
         }
     }
 
-    public Flight orderTakeOff(final Consumer<String> removeAwaitingFlight) {
+    public FlightTakeOff orderTakeOff(final long currentTakeOffOrder) {
         if(!isOpen()) {
             return null;
         }
 
-        List<Flight> progressedFlights = null;
+        List<InMemoryFlight> progressedFlights = null;
 
-        final Flight departedFlight;
+        final InMemoryFlight departedFlight;
         synchronized(queueLock) {
             departedFlight = queuedFlights.poll();
             if(departedFlight != null) {
@@ -64,21 +67,21 @@ public class FlightRunway {
         if(departedFlight != null) {
             departedFlight.publishRunwayEvent(new FlightRunwayEvent(FLIGHT_TAKE_OFF, departedFlight.getCode(), name, -1));
         }
-        
         if(progressedFlights != null) {
             int flightPos = 0;
-            for(final Flight flight : progressedFlights) {
+            for(final InMemoryFlight flight : progressedFlights) {
                 flight.publishRunwayEvent(new FlightRunwayEvent(RUNWAY_PROGRESS, flight.getCode(), name, flightPos));
                 flightPos++;
             }
         }
 
-        removeAwaitingFlight.accept(departedFlight.getCode());
-
-        return departedFlight;
+        return departedFlight == null ?
+            null :
+            departedFlight.toTakeOff(currentTakeOffOrder, name)
+            ;
     }
 
-    public void cleanRunway(final Consumer<Flight> callback) {
+    public void cleanRunway(final Consumer<InMemoryFlight> callback) {
         synchronized(queueLock) {
             if(callback != null) {
                 queuedFlights.forEach(callback);
@@ -87,20 +90,31 @@ public class FlightRunway {
         }
     }
 
+    @Override
     public int awaitingFlights() {
         synchronized(queueLock) {
             return queuedFlights.size();
         }
     }
 
+    @Override
+    public void listAwaitingFlights(final Consumer<Flight> consumer) {
+        synchronized(queueLock) {
+            queuedFlights.forEach(consumer);
+        }
+    }
+
+    @Override
     public String getName() {
         return name;
     }
 
+    @Override
     public FlightRunwayCategory getCategory() {
         return category;
     }
 
+    @Override
     public boolean isOpen() {
         final boolean ret;
         openReadLock.lock();

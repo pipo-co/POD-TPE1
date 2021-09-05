@@ -4,9 +4,9 @@ import ar.edu.itba.pod.interfaces.FlightAdministrationService;
 import ar.edu.itba.pod.interfaces.FlightInfoService;
 import ar.edu.itba.pod.interfaces.FlightRunwayRequestService;
 import ar.edu.itba.pod.interfaces.FlightTrackingService;
-import ar.edu.itba.pod.server.models.repositories.impls.InMemoryAwaitingFlightsRepository;
-import ar.edu.itba.pod.server.models.repositories.impls.InMemoryFlightRunwayRepository;
-import ar.edu.itba.pod.server.models.repositories.impls.InMemoryFlightTakeOffRepository;
+import ar.edu.itba.pod.server.repositories.impls.InMemoryAwaitingFlightsRepository;
+import ar.edu.itba.pod.server.repositories.impls.InMemoryFlightRunwayRepository;
+import ar.edu.itba.pod.server.repositories.impls.InMemoryFlightTakeOffRepository;
 import ar.edu.itba.pod.server.services.FlightAdministrationServiceImpl;
 import ar.edu.itba.pod.server.services.FlightInfoServiceImpl;
 import ar.edu.itba.pod.server.services.FlightRunwayRequestServiceImpl;
@@ -43,7 +43,11 @@ public final class Server {
         final Registry registry = LocateRegistry.getRegistry(host, port);
         logger.info("Registry Found");
 
-        final FlightAdministrationService adminService = new FlightAdministrationServiceImpl();
+        final FlightAdministrationService adminService = new FlightAdministrationServiceImpl(
+            InMemoryFlightRunwayRepository      .getInstance(),
+            InMemoryFlightTakeOffRepository     .getInstance(),
+            InMemoryAwaitingFlightsRepository   .getInstance()
+        );
         registry.rebind(FlightAdministrationService.CANONICAL_NAME, UnicastRemoteObject.exportObject(adminService, 0));
         logger.info("Flight Administration Service Registered");
 

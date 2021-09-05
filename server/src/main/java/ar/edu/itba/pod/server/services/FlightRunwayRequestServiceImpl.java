@@ -1,12 +1,12 @@
 package ar.edu.itba.pod.server.services;
 
+import ar.edu.itba.pod.exceptions.UniqueFlightCodeConstraintException;
+import ar.edu.itba.pod.exceptions.UnregistrableFlightException;
 import ar.edu.itba.pod.interfaces.FlightRunwayRequestService;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
-import ar.edu.itba.pod.server.models.Flight;
+import ar.edu.itba.pod.models.Flight;
 import ar.edu.itba.pod.server.repositories.AwaitingFlightsRepository;
 import ar.edu.itba.pod.server.repositories.FlightRunwayRepository;
-import ar.edu.itba.pod.server.repositories.impls.InMemoryAwaitingFlightsRepository;
-import ar.edu.itba.pod.server.repositories.impls.InMemoryFlightRunwayRepository;
 
 import java.rmi.RemoteException;
 
@@ -23,17 +23,9 @@ public class FlightRunwayRequestServiceImpl implements FlightRunwayRequestServic
     }
 
     @Override
-    public void registerFlight(final String flight, final String airport, final String airline, final FlightRunwayCategory minCategory) throws RemoteException {
+    public void registerFlight(final String code, final String airline, final String destinationAirport, final FlightRunwayCategory minCategory) throws RemoteException, UniqueFlightCodeConstraintException {
+        final Flight flight = awaitingFlightRepository.createFlight(code, airline, destinationAirport, minCategory, flightRunwayRepository.getTakeOffOrderCount());
         
-        if (awaitingFlightRepository.containsFlight(flight)) {
-            throw new DuplicatedFlightException();
-        }
-
-        Flight newFlight = new Flight(airline, flight, airport, minCategory, flightRunwayRepository.getTakeOffOrderCount());
-        
-        flightRunwayRepository.registerFlight(newFlight, UnregistrableFlightException::new);
-        
-        awaitingFlightRepository.addFlight(newFlight);
-
+        flightRunwayRepository.registerFlight(flight, UnregistrableFlightException::new);
     }
 }

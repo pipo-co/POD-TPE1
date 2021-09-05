@@ -3,31 +3,28 @@ package ar.edu.itba.pod.server.repositories;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+import ar.edu.itba.pod.exceptions.RunwayNotFoundException;
+import ar.edu.itba.pod.exceptions.UniqueFlightRunwayNameConstraintException;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
 import ar.edu.itba.pod.models.FlightTakeOff;
-import ar.edu.itba.pod.server.models.Flight;
+import ar.edu.itba.pod.models.Flight;
+import ar.edu.itba.pod.models.FlightRunway;
 
 public interface FlightRunwayRepository {
 
-    boolean createRunway(final String name, final FlightRunwayCategory category);
+    FlightRunway createRunway(final String name, final FlightRunwayCategory category) throws UniqueFlightRunwayNameConstraintException;
 
-    public Optional<Boolean> isRunwayOpen(final String name);
+    Optional<FlightRunway> getRunway(final String name);
 
-    /**
-     * @return true if runwayway is present or else false
-     */
-    public boolean openRunway(final String name);
+    void openRunway(final String name) throws RunwayNotFoundException;
 
-    /**
-     * @return true if runwayway is present or else false
-     */
-    public boolean closeRunway(final String name);
+    void closeRunway(final String name) throws RunwayNotFoundException;
 
-    public void orderTakeOff(final Consumer<FlightTakeOff> callbackl, final Consumer<String> removeAwaitingFlight);
+    void orderTakeOff(final Consumer<FlightTakeOff> takeOffConsumer);
 
-    public long getTakeOffOrderCount();
+    long getTakeOffOrderCount();
 
-    public void reorderRunways(final Consumer<Flight> unregistrableConsumer);
+    void reorderRunways(final Consumer<Flight> unregistrableConsumer);
 
-    public void registerFlight(final Flight flight, final Consumer<Flight> unregistrableConsumer);
+    void registerFlight(final Flight flight, final Consumer<Flight> unregistrableConsumer);
 }

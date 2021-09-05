@@ -4,75 +4,74 @@ import java.rmi.RemoteException;
 import java.util.LinkedList;
 import java.util.List;
 
+import ar.edu.itba.pod.exceptions.UniqueFlightRunwayNameConstraintException;
+import ar.edu.itba.pod.exceptions.RunwayNotFoundException;
+import ar.edu.itba.pod.exceptions.UnregistrableFlightException;
 import ar.edu.itba.pod.interfaces.FlightAdministrationService;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
-import ar.edu.itba.pod.server.models.Flight;
+import ar.edu.itba.pod.models.Flight;
+import ar.edu.itba.pod.models.FlightRunway;
 import ar.edu.itba.pod.server.repositories.AwaitingFlightsRepository;
 import ar.edu.itba.pod.server.repositories.FlightRunwayRepository;
 import ar.edu.itba.pod.server.repositories.FlightTakeOffRepository;
-import ar.edu.itba.pod.server.repositories.impls.InMemoryAwaitingFlightsRepository;
-import ar.edu.itba.pod.server.repositories.impls.InMemoryFlightRunwayRepository;
-import ar.edu.itba.pod.server.repositories.impls.InMemoryFlightTakeOffRepository;
+
+import static java.util.Objects.*;
 
 public class FlightAdministrationServiceImpl implements FlightAdministrationService {
+    private final FlightRunwayRepository        flightRunwayRepository;
+    private final FlightTakeOffRepository       flightTakeOffRepository;
+    private final AwaitingFlightsRepository     awaitingFlightsRepository;
 
-    
-    private final FlightRunwayRepository flightRunwayRepository;
-    private final FlightTakeOffRepository flightTakeOffRepository;
-    private final AwaitingFlightsRepository awaitingFlightsRepository;
-
-    public FlightAdministrationServiceImpl() {
-        this.flightRunwayRepository = InMemoryFlightRunwayRepository.getInstance();
-        this.flightTakeOffRepository = InMemoryFlightTakeOffRepository.getInstance();
-        this.awaitingFlightsRepository = InMemoryAwaitingFlightsRepository.getInstance();
+    public FlightAdministrationServiceImpl(
+        final FlightRunwayRepository flightRunwayRepository,
+        final FlightTakeOffRepository flightTakeOffRepository,
+        final AwaitingFlightsRepository awaitingFlightsRepository
+    ) {
+        this.flightRunwayRepository     = requireNonNull(flightRunwayRepository);
+        this.flightTakeOffRepository    = requireNonNull(flightTakeOffRepository);
+        this.awaitingFlightsRepository  = requireNonNull(awaitingFlightsRepository);
     }
 
     @Override
-    public void createRunway(final String name, final FlightRunwayCategory category) throws RemoteException {
-        
-        if(!flightRunwayRepository.createRunway(name, category)) {
-            throw new DuplicatedRunwayException();
-        }
+    public void createRunway(final String name, final FlightRunwayCategory category) throws RemoteException, UniqueFlightRunwayNameConstraintException {
+        flightRunwayRepository.createRunway(name, category);
     }
 
     @Override
-    public boolean isRunwayOpen(final String name) throws RemoteException {     
-        return flightRunwayRepository.isRunwayOpen(name).orElseThrow(RunwayNotExistsException::new);
+    public boolean isRunwayOpen(final String name) throws RemoteException, RunwayNotFoundException {
+        return flightRunwayRepository
+            .getRunway(name)
+            .map(FlightRunway::isOpen)
+            .orElseThrow(RunwayNotFoundException::new)
+            ;
     }
 
     @Override
-    public void openRunway(final String name) throws RemoteException {    
-        
-        if(!flightRunwayRepository.openRunway(name)) {
-            throw new RunwayNotExistsException();
-        }
+    public void openRunway(final String name) throws RemoteException, RunwayNotFoundException {
+        flightRunwayRepository.openRunway(name);
     }
 
     @Override
-    public void closeRunway(final String name) throws RemoteException {
-        
-        if(!flightRunwayRepository.closeRunway(name)) {
-            throw new RunwayNotExistsException();
-        }
+    public void closeRunway(final String name) throws RemoteException, RunwayNotFoundException {
+        flightRunwayRepository.closeRunway(name);
     }
 
     @Override
     public void orderTakeOff() throws RemoteException {
-
-        flightRunwayRepository.orderTakeOff(flightTakeOffRepository::addTakeOff, awaitingFlightsRepository::removeFlight);
-
+        flightRunwayRepository.orderTakeOff(flightTakeOff -> {
+            awaitingFlightsRepository.deleteFlight(flightTakeOff.getFlight());
+            flightTakeOffRepository.addTakeOff(flightTakeOff);
+        });
     }
 
     @Override
     public void reorderRunways() throws RemoteException {
-
-        List<Flight> unregistrableFlights = new LinkedList<>();
+        final List<Flight> unregistrableFlights = new LinkedList<>();
 
         flightRunwayRepository.reorderRunways(unregistrableFlights::add);
 
-        if (!unregistrableFlights.isEmpty()) {
-            
-            unregistrableFlights.forEach(flight -> awaitingFlightsRepository.removeFlight(flight.getCode()));
+        if(!unregistrableFlights.isEmpty()) {
+            unregistrableFlights.forEach(flight -> awaitingFlightsRepository.deleteFlight(flight.getCode()));
             throw new UnregistrableFlightException(unregistrableFlights);
         }
     }
