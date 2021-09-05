@@ -26,8 +26,13 @@ public final class InMemoryFlightTakeOffRepository implements FlightTakeOffRepos
     }
 
     public void listTakeOffs(final Consumer<FlightTakeOff> callback) {
+        
+        final List<FlightTakeOff> takeOffsSnapshot;
+
         synchronized(takeOffs) {
-            takeOffs.forEach(callback);
+            takeOffsSnapshot = new LinkedList<>(takeOffs);
         }
+
+        takeOffsSnapshot.forEach(callback);
     }
 }

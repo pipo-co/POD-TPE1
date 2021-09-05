@@ -51,7 +51,9 @@ public final class Server {
         registry.rebind(FlightAdministrationService.CANONICAL_NAME, UnicastRemoteObject.exportObject(adminService, 0));
         logger.info("Flight Administration Service Registered");
 
-        final FlightInfoService infoService = new FlightInfoServiceImpl();
+        final FlightInfoService infoService = new FlightInfoServiceImpl(
+            InMemoryFlightTakeOffRepository      .getInstance()
+        );
         registry.rebind(FlightInfoService.CANONICAL_NAME, UnicastRemoteObject.exportObject(infoService, 0));
         logger.info("Flight Information Service Registered");
 
