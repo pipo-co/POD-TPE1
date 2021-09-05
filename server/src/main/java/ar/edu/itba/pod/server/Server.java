@@ -57,7 +57,9 @@ public final class Server {
         registry.rebind(FlightInfoService.CANONICAL_NAME, UnicastRemoteObject.exportObject(infoService, 0));
         logger.info("Flight Information Service Registered");
 
-        final FlightTrackingService trackingService = new FlightTrackingServiceImpl();
+        final FlightTrackingService trackingService = new FlightTrackingServiceImpl(
+            InMemoryAwaitingFlightsRepository.getInstance()
+        );
         registry.rebind(FlightTrackingService.CANONICAL_NAME, UnicastRemoteObject.exportObject(trackingService, 0));
         logger.info("Flight Tracking Service Registered");
 
@@ -68,6 +70,6 @@ public final class Server {
         registry.rebind(FlightRunwayRequestService.CANONICAL_NAME, UnicastRemoteObject.exportObject(trackRequestService, 0));
         logger.info("Flight Runway Request Service Registered");
 
-        System.out.println("All Services Registered - Awaiting Requests ...");
+        logger.info("All Services Registered - Awaiting Requests ...");
     }
 }

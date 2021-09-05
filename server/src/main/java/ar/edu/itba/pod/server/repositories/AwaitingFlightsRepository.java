@@ -1,5 +1,7 @@
 package ar.edu.itba.pod.server.repositories;
 
+import ar.edu.itba.pod.callbacks.FlightRunwayEventConsumer;
+import ar.edu.itba.pod.exceptions.FlightNotFoundException;
 import ar.edu.itba.pod.exceptions.UniqueFlightCodeConstraintException;
 import ar.edu.itba.pod.models.Flight;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
@@ -13,4 +15,6 @@ public interface AwaitingFlightsRepository {
     Optional<Flight> getFlight(final String flight);
 
     void deleteFlight(final String flight);
+
+    void addSubscriptionToFlight(final String flightCode, final FlightRunwayEventConsumer callback) throws FlightNotFoundException;
 }
