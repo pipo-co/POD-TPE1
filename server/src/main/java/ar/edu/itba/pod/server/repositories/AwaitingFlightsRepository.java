@@ -9,4 +9,6 @@ public interface AwaitingFlightsRepository {
     Flight getFlight(final String flight);
 
     void removeFlight(final String flight);
+
+    boolean containsFlight(final String flight);
 }

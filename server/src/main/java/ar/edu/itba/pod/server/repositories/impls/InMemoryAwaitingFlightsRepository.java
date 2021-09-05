@@ -23,12 +23,16 @@ public final class InMemoryAwaitingFlightsRepository implements AwaitingFlightsR
     public void addFlight(final Flight flight) {
         flights.put(flight.getCode(), flight);
     }
-
+    
     public Flight getFlight(final String flight) {
         return flights.get(flight);
     }
 
     public void removeFlight(final String flight) {
         flights.remove(flight);
+    }
+
+    public boolean containsFlight(final String flight) {
+        return flights.containsKey(flight);
     }
 }

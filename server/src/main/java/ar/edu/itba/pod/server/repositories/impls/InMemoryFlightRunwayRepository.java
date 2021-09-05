@@ -20,6 +20,12 @@ import ar.edu.itba.pod.server.repositories.FlightRunwayRepository;
 public final class InMemoryFlightRunwayRepository implements FlightRunwayRepository {
 
     private static final InMemoryFlightRunwayRepository instance = new InMemoryFlightRunwayRepository();
+    private static final Comparator<FlightRunway> selectRunwayComparator = Comparator
+        .comparing(FlightRunway::awaitingFlights)
+        .thenComparing(Comparator.comparing(FlightRunway::getCategory))
+        .thenComparing(Comparator.comparing(FlightRunway::getName))
+        ;
+
     public static InMemoryFlightRunwayRepository getInstance() {
         return instance;
     }
@@ -28,13 +34,13 @@ public final class InMemoryFlightRunwayRepository implements FlightRunwayReposit
         // Singleton
     }
 
-    private static Map<String, FlightRunway>    runways = Collections.synchronizedMap(new HashMap<>());
-    private static long                         takeOffOrderCount = 0L;
-    private static StampedLock                  orderCountLock = new StampedLock();
+    private static Map<String, FlightRunway> runways = Collections.synchronizedMap(new HashMap<>());
+    private static long takeOffOrderCount = 0L;
+    private static StampedLock orderCountLock = new StampedLock();
 
     public boolean createRunway(final String name, final FlightRunwayCategory category) {
-        
-        if(runways.containsKey(name)){
+
+        if (runways.containsKey(name)) {
             return false;
         }
 
@@ -49,10 +55,10 @@ public final class InMemoryFlightRunwayRepository implements FlightRunwayReposit
 
     @Override
     public boolean openRunway(final String name) {
-        
+
         final FlightRunway runway = runways.get(name);
 
-        if(runway == null) {
+        if (runway == null) {
             return false;
         }
 
@@ -62,22 +68,22 @@ public final class InMemoryFlightRunwayRepository implements FlightRunwayReposit
 
     @Override
     public boolean closeRunway(final String name) {
-        
+
         final FlightRunway runway = runways.get(name);
 
-        if(runway == null) {
+        if (runway == null) {
             return false;
         }
 
         runway.close();
         return true;
     }
-    
+
     private long incrementOrderCount() {
-        
+
         final long newValue;
         final long stamp = orderCountLock.writeLock();
-        
+
         try {
             takeOffOrderCount++;
             newValue = takeOffOrderCount;
@@ -88,61 +94,70 @@ public final class InMemoryFlightRunwayRepository implements FlightRunwayReposit
         return newValue;
     }
 
+    public long getTakeOffOrderCount() {
+
+        final long stamp = orderCountLock.tryOptimisticRead();
+        final long value = takeOffOrderCount;
+
+        if (!orderCountLock.validate(stamp)) {
+            final long second_stamp = orderCountLock.readLock();
+            final long second_value;
+
+            try {
+                second_value = takeOffOrderCount;
+            } finally {
+                orderCountLock.unlockRead(second_stamp); 
+            }
+
+            return second_value;
+        }
+        
+        return value;
+    }
+
     @Override
-    public void orderTakeOff(final Consumer<FlightTakeOff> callback) {      
+    public void orderTakeOff(final Consumer<FlightTakeOff> callback) {
 
         final List<FlightTakeOff> takeOffs;
 
-        synchronized(runways) {
+        synchronized (runways) {
 
             final long currentOrderCount = incrementOrderCount();
 
-            takeOffs = runways.values()
-                .stream()
-                .map(runway -> runway.orderTakeOff().toTakeOff(currentOrderCount, runway.getName()))
-                .collect(Collectors.toList())
-                ;
+            takeOffs = runways.values().stream()
+                    .map(runway -> runway.orderTakeOff().toTakeOff(currentOrderCount, runway.getName()))
+                    .collect(Collectors.toList());
         }
 
         takeOffs.forEach(callback);
     }
 
     @Override
-    public void reorderRunways() {
+    public void reorderRunways(final Consumer<Flight> unregistrableConsumer) {
 
         final List<Flight> flights = new LinkedList<>();
 
-        synchronized(runways) {
-            runways.values()
-                .stream()
-                .sorted(Comparator.comparing(FlightRunway::getCategory).thenComparing(Comparator.comparing(FlightRunway::getName)))
-                .forEach(runway -> runway.cleanRunway(flights::add))
-                ;
+        synchronized (runways) {
+            runways.values().stream()
+                    .sorted(Comparator.comparing(FlightRunway::getCategory)
+                            .thenComparing(Comparator.comparing(FlightRunway::getName)))
+                    .forEach(runway -> runway.cleanRunway(flights::add));
 
-            flights.forEach(flight -> registerFlight(flight)); // Que pasa si hay uno de estos vuelos que no se peude insertar (pistas cerradas)
+            flights.forEach(flight -> registerFlight(flight, unregistrableConsumer)); // Que pasa si hay uno de estos vuelos que no se peude insertar (pistas cerradas) 
         }
     }
 
     @Override
-    public boolean registerFlight(final Flight flight) {
-    
-        boolean[] inserted = {true};
+    public boolean registerFlight(final Flight flight, final Consumer<Flight> unregistrableConsumer) {
 
-        synchronized(runways) {
-            
-            runways.values()
-                .stream()
-                .filter(FlightRunway::isOpen)
-                .filter(runway -> runway.getCategory().compareTo(flight.getMinCategory()) >= 0)
-                .sorted(Comparator.comparing(FlightRunway::awaitingFlights)
-                                    .thenComparing(Comparator.comparing(FlightRunway::getCategory))
-                                    .thenComparing(Comparator.comparing(FlightRunway::getName))
-                                    )
-                .findFirst()
-                    .ifPresentOrElse(
-                        runway -> runway.registerFlight(flight), 
-                        () -> inserted[0] = false)
-                ;
+        boolean[] inserted = { true };
+
+        synchronized (runways) {
+
+            runways.values().stream().filter(FlightRunway::isOpen)
+                    .filter(runway -> runway.getCategory().compareTo(flight.getMinCategory()) >= 0)
+                    .sorted(selectRunwayComparator)
+                    .findFirst().ifPresentOrElse(runway -> runway.registerFlight(flight), () -> unregistrableConsumer.accept(flight));
 
         }
 

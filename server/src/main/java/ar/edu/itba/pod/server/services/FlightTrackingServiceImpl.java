@@ -9,6 +9,6 @@ public class FlightTrackingServiceImpl implements FlightTrackingService {
 
     @Override
     public void suscribeToFlight(final String airline, final String flight, final FlightRunwayEventConsumer callback) throws RemoteException {
-
+            
     }
 }
