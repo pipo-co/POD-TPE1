@@ -43,6 +43,8 @@ public final class FlightRunwayRequestClient {
 
         try(final Stream<String> runwayRequestLines = Files.lines(csv)) {
             final long totalRequests = runwayRequestLines
+                // El primero es el header
+                .skip(1)
                 .map(RunwayRequest::fromCSV)
                 .map(request -> registerFlight(service, request))
                 .filter(x -> x)
