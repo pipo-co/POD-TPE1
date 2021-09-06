@@ -7,8 +7,6 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -26,16 +24,6 @@ public final class FlightAdministrationClient {
     private FlightAdministrationClient() {
         // static class
     }
-    private static final String REMOTE_EXCEPTION_MESSAGE = "Internal Error: Remote exception";
-    private static Map<Action, Consumer<FlightAdministrationService>> actionHandlers = Map.of(
-        Action.ADD,         FlightAdministrationClient::addRunway,
-        Action.OPEN,        FlightAdministrationClient::open,
-        Action.CLOSE,       FlightAdministrationClient::close,
-        Action.STATUS,      FlightAdministrationClient::status,
-        Action.TAKE_OFF,    FlightAdministrationClient::takeOff,
-        Action.REORDER,     FlightAdministrationClient::reorder
-    );
-
 
     public static void main(final String[] args) throws RemoteException, NotBoundException {
         logger.info("Flight Administration Client Started");
@@ -45,15 +33,15 @@ public final class FlightAdministrationClient {
         final FlightAdministrationService service = (FlightAdministrationService) registry.lookup(FlightAdministrationService.CANONICAL_NAME);
 
         try {
-            actionHandlers.get(getAction()).accept(service);
-        } catch (Exception e) {
+            getAction().execute(service);
+        } catch(final Exception e) {
             System.err.println(e.getMessage());
         }
 
         logger.info("Flight Administration Client Ended");
     }
 
-    public static void addRunway(final FlightAdministrationService service) {
+    public static void addRunway(final FlightAdministrationService service) throws RemoteException {
 
         final String runwayName = getRunwayName();
         final FlightRunwayCategory category = getCategory();
@@ -61,83 +49,67 @@ public final class FlightAdministrationClient {
         final boolean status;
         try {
             status = service.createRunway(runwayName, category);
-        } catch (UniqueRunwayNameConstraintException e) {
+        } catch(UniqueRunwayNameConstraintException e) {
             throw new RuntimeException(String.format("There already exists a runway with the name %s.", runwayName), e);
-        } catch (RemoteException e) {
-            throw new RuntimeException(REMOTE_EXCEPTION_MESSAGE, e);
         }
 
         System.out.println(getRunwayStatusMessage(runwayName, status));
     }
     
-    public static void open(final FlightAdministrationService service) {
+    public static void open(final FlightAdministrationService service) throws RemoteException {
         
         final String runwayName = getRunwayName();
         
         try {
             service.openRunway(runwayName);
-        } catch (RunwayNotFoundException e) {
-            throw new RuntimeException(String.format("Runway with name %s not found. Make sure to call 'open' with a existing runway.", runwayName), e);
-        } catch (RemoteException e) {
-            throw new RuntimeException(REMOTE_EXCEPTION_MESSAGE, e);
+        } catch(RunwayNotFoundException e) {
+            throw new RuntimeException(String.format("Runway with name %s not found. Make sure to call 'open' with an existing runway.", runwayName), e);
         }
 
         System.out.println(getRunwayStatusMessage(runwayName, true));
     }
     
-    public static void close(final FlightAdministrationService service) {
+    public static void close(final FlightAdministrationService service) throws RemoteException {
         
         final String runwayName = getRunwayName();
         
         try {
             service.closeRunway(runwayName);
-        } catch (RunwayNotFoundException e) {
+        } catch(RunwayNotFoundException e) {
             throw new RuntimeException(String.format("Runway with name %s not found. Make sure to call 'close' with a existing runway.", runwayName), e);
-        } catch (RemoteException e) {
-            throw new RuntimeException(REMOTE_EXCEPTION_MESSAGE, e);
         }
 
         System.out.println(getRunwayStatusMessage(runwayName, false));
     }
     
-    public static void status(final FlightAdministrationService service) {
+    public static void status(final FlightAdministrationService service) throws RemoteException {
         
         final String runwayName = getRunwayName();
         
         final boolean status;
         try {
             status = service.isRunwayOpen(runwayName);
-        } catch (RunwayNotFoundException e) {
+        } catch(RunwayNotFoundException e) {
             throw new RuntimeException(String.format("Runway with name %s not found. Make sure to call 'status' with a existing runway.", runwayName), e);
-        } catch (RemoteException e) {
-            throw new RuntimeException(REMOTE_EXCEPTION_MESSAGE, e);
         }
 
         System.out.println(getRunwayStatusMessage(runwayName, status));
     }
     
-    public static void takeOff(final FlightAdministrationService service) {
-        
-        try {
-            service.orderTakeOff();
-        } catch (RemoteException e) {
-            throw new RuntimeException(REMOTE_EXCEPTION_MESSAGE, e);
-        }
-
+    public static void takeOff(final FlightAdministrationService service) throws RemoteException {
+        service.orderTakeOff();
         System.out.println("Flights departed!");
     }
     
-    public static void reorder(final FlightAdministrationService service) {
-        
-        final RunwayReorderSummary summary;
+    public static void reorder(final FlightAdministrationService service) throws RemoteException {
+        final RunwayReorderSummary summary = service.reorderRunways();
 
-        try {
-            summary = service.reorderRunways();
-        } catch (RemoteException e) {
-            throw new RuntimeException(REMOTE_EXCEPTION_MESSAGE, e);
-        }
+        summary.getUnassignedFlights()
+            .stream()
+            .map(code -> String.format("Cannot assign Flight %s", code))
+            .forEach(System.out::println)
+            ;
 
-        summary.getUnassignedFlights().stream().map(code -> String.format("Cannot assign Flight %s", code)).forEach(System.out::println);
         System.out.printf("%d flights assigned", summary.getAssignedFlights());
     }
 
@@ -178,7 +150,7 @@ public final class FlightAdministrationClient {
         }
 
         return category;
-    } 
+    }
 
     private static Action getAction() {
 
@@ -202,30 +174,46 @@ public final class FlightAdministrationClient {
     }
 
     public enum Action {
-        ADD("add"), 
-        OPEN("open"), 
-        CLOSE("close"), 
-        STATUS("status"), 
-        TAKE_OFF("takeOff"), 
-        REORDER("reorder");
+        ADD     ("add",     FlightAdministrationClient::addRunway   ),
+        OPEN    ("open",    FlightAdministrationClient::open        ),
+        CLOSE   ("close",   FlightAdministrationClient::close       ),
+        STATUS  ("status",  FlightAdministrationClient::status      ),
+        TAKE_OFF("takeOff", FlightAdministrationClient::takeOff     ),
+        REORDER ("reorder", FlightAdministrationClient::reorder     ),
+        ;
 
-        private final String name;
+        private final String                        name;
+        private final FlightAdministrationAction    handler;
 
-        private Action(final String name) {
-            this.name = name;
+        Action(final String name, final FlightAdministrationAction handler) {
+            this.name       = name;
+            this.handler    = handler;
         }
 
         public String getName() {
             return name;
         }
 
+        public FlightAdministrationAction getHandler() {
+            return handler;
+        }
+
+        public void execute(final FlightAdministrationService service) throws RemoteException {
+            handler.execute(service);
+        }
+
         public static Action fromName(final String name) {
-            for (Action a : Action.values()) {
-                if (a.name.equals(name)) {
+            for(final Action a : Action.values()) {
+                if(a.name.equals(name)) {
                     return a;
                 }
             }
             return null;
         }
+    }
+
+    @FunctionalInterface
+    private interface FlightAdministrationAction {
+        void execute(final FlightAdministrationService service) throws RemoteException;
     }
 }
