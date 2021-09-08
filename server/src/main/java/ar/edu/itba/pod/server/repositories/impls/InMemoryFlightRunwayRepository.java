@@ -8,9 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.locks.StampedLock;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import ar.edu.itba.pod.exceptions.RunwayNotFoundException;
@@ -36,13 +35,11 @@ public class InMemoryFlightRunwayRepository implements FlightRunwayRepository {
         ;
 
     private final Map<String, InMemoryFlightRunway>  runways;
-    private       long                               takeOffOrderCount;
-    private final StampedLock                        orderCountLock;
+    private final AtomicLong                         takeOffOrderCount;
 
     public InMemoryFlightRunwayRepository() {
         this.runways            = Collections.synchronizedMap(new HashMap<>());
-        this.takeOffOrderCount  = 0L;
-        this.orderCountLock     = new StampedLock();
+        this.takeOffOrderCount  = new AtomicLong();
     }
 
     @Override
@@ -81,36 +78,9 @@ public class InMemoryFlightRunwayRepository implements FlightRunwayRepository {
         runway.close();
     }
 
-    private long incrementOrderCount() {
-        final long newValue;
-
-        final long stamp = orderCountLock.writeLock();
-        try {
-            takeOffOrderCount++;
-            newValue = takeOffOrderCount;
-        } finally {
-            orderCountLock.unlockWrite(stamp);
-        }
-
-        return newValue;
-    }
-
     @Override
     public long getTakeOffOrderCount() {
-        long stamp = orderCountLock.tryOptimisticRead();
-        long ret = takeOffOrderCount;
-
-        if(!orderCountLock.validate(stamp)) {
-
-            stamp = orderCountLock.readLock();
-            try {
-                ret = takeOffOrderCount;
-            } finally {
-                orderCountLock.unlockRead(stamp);
-            }
-        }
-
-        return ret;
+        return takeOffOrderCount.get();
     }
 
     @Override
@@ -118,7 +88,7 @@ public class InMemoryFlightRunwayRepository implements FlightRunwayRepository {
         final List<FlightTakeOff> takeOffs;
 
         synchronized(runways) {
-            final long currentOrderCount = incrementOrderCount();
+            final long currentOrderCount = takeOffOrderCount.incrementAndGet();
 
             takeOffs = runways.values()
                 .stream()

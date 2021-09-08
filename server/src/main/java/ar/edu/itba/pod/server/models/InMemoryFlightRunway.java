@@ -7,7 +7,7 @@ import static ar.edu.itba.pod.models.FlightRunwayEvent.EventType.RUNWAY_PROGRESS
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.locks.StampedLock;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import ar.edu.itba.pod.models.FlightRunwayCategory;
@@ -20,19 +20,17 @@ public final class InMemoryFlightRunway implements FlightRunway {
     private final String                name;
     private final FlightRunwayCategory  category;
     private final Queue<InMemoryFlight> queuedFlights;
-    private       boolean               open;           // ¡No acceder directamente! Sincronizado
+    private final AtomicBoolean         open;
 
     private final Object                queueLock;
-    private final StampedLock           openLock;
 
     public InMemoryFlightRunway(final String name, final FlightRunwayCategory category) {
         this.name           = name;
         this.category       = category;
-        this.open           = true;
+        this.open           = new AtomicBoolean(true);
         this.queuedFlights  = new LinkedList<>();
 
         this.queueLock      = new Object();
-        this.openLock       = new StampedLock();
     }
 
     public void registerFlight(final InMemoryFlight flight) {
@@ -44,7 +42,7 @@ public final class InMemoryFlightRunway implements FlightRunway {
     }
 
     public FlightTakeOff orderTakeOff(final long currentTakeOffOrder) {
-        if(!isOpen()) {
+        if(!open.get()) {
             return null;
         }
 
@@ -77,18 +75,9 @@ public final class InMemoryFlightRunway implements FlightRunway {
             ;
     }
 
-    public InMemoryFlight popFlight() {
+    public InMemoryFlight pollFlight() {
         synchronized(queueLock) {
             return queuedFlights.poll();
-        }
-    }
-
-    public void cleanRunway(final Consumer<InMemoryFlight> callback) {
-        synchronized(queueLock) {
-            if(callback != null) {
-                queuedFlights.forEach(callback);
-            }
-            queuedFlights.clear();
         }
     }
 
@@ -118,27 +107,10 @@ public final class InMemoryFlightRunway implements FlightRunway {
 
     @Override
     public boolean isOpen() {
-        long stamp = openLock.tryOptimisticRead();
-        boolean ret = open;
-
-        if(!openLock.validate(stamp)) {
-            stamp = openLock.readLock();
-            try {
-                ret = open;
-            } finally {
-                openLock.unlock(stamp);
-            }
-        }
-
-        return ret;
+        return open.get();
     }
     public void setOpen(final boolean open) {
-        final long stamp = openLock.writeLock();
-        try {
-            this.open = open;
-        } finally {
-            openLock.unlock(stamp);
-        }
+        this.open.set(open);
     }
     public void open() {
         setOpen(true);
