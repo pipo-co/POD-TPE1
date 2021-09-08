@@ -3,6 +3,7 @@ package ar.edu.itba.pod.server.repositories.impls;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -104,39 +105,40 @@ public class InMemoryFlightRunwayRepository implements FlightRunwayRepository {
     @Override
     public long reorderRunways(final Consumer<Flight> unregistrableConsumer) {
 
-        final long[] totalReorderedFlights = {0}; 
-        final List<InMemoryFlight> flights = new LinkedList<>();
-        
-        final Consumer<InMemoryFlight> flightConsumer = flights::add;
-        final Consumer<Flight> subtracUnregistrableFlightsConsumer = f -> totalReorderedFlights[0]--;
-        final Consumer<Flight> wrappedUnregistrableConsumer = subtracUnregistrableFlightsConsumer.andThen(unregistrableConsumer);
+        final long[] totalReorderedFlights = {0};
+        final Consumer<Flight> subtractTotalFlights = f -> totalReorderedFlights[0]--;
 
-        boolean flag = true;
-        InMemoryFlight auxFlight;
-        final List<InMemoryFlightRunway> orderedRunways;
         synchronized(runways) {
-            orderedRunways = runways.values()
-                            .stream()
-                            .sorted(RUNWAY_COMPARATOR)
-                            .collect(Collectors.toList())
-                            ;
-                
-            while(flag) {
-                flag = false;
-                for (InMemoryFlightRunway runway: orderedRunways) {
-                    auxFlight = runway.popFlight();
-                    if (auxFlight != null) {
+            final List<InMemoryFlightRunway> filledRunways = runways.values()
+                .stream()
+                .sorted(RUNWAY_COMPARATOR)
+                .collect(Collectors.toList())
+                ;
+
+            final List<InMemoryFlight> flights = new LinkedList<>();
+
+            while(!filledRunways.isEmpty()) {
+                final Iterator<InMemoryFlightRunway> filledRunwaysIter = filledRunways.iterator();
+                while(filledRunwaysIter.hasNext()) {
+                    final InMemoryFlightRunway runway = filledRunwaysIter.next();
+
+                    final InMemoryFlight auxFlight = runway.pollFlight();
+                    if(auxFlight == null) {
+                        filledRunwaysIter.remove();
+                    } else {
                         flights.add(auxFlight);
-                    }
-                    if (runway.awaitingFlights() > 0) {
-                        flag = true;
                     }
                 }
             }
-            
+
             totalReorderedFlights[0] = flights.size();
 
-            flights.forEach(flight -> registerFlight(flight, wrappedUnregistrableConsumer));
+            flights.forEach(flight -> registerFlight(
+                flight,
+                unregistrableConsumer == null ?
+                    subtractTotalFlights :
+                    subtractTotalFlights.andThen(unregistrableConsumer))
+            );
         }
 
         return totalReorderedFlights[0];
