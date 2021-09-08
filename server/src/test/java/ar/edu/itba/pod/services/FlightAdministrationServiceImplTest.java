@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.rmi.RemoteException;
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -23,6 +25,7 @@ import ar.edu.itba.pod.exceptions.UnregistrableFlightException;
 import ar.edu.itba.pod.interfaces.FlightAdministrationService;
 import ar.edu.itba.pod.interfaces.FlightRunwayRequestService;
 import ar.edu.itba.pod.models.Flight;
+import ar.edu.itba.pod.models.FlightRunway;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
 import ar.edu.itba.pod.server.repositories.AwaitingFlightsRepository;
 import ar.edu.itba.pod.server.repositories.FlightRunwayRepository;
@@ -90,7 +93,7 @@ public class FlightAdministrationServiceImplTest {
             throws UniqueFlightCodeConstraintException, UnregistrableFlightException, RemoteException {
 
         createMultipleRunways();
-        registerMultipleFlightsRunways();
+        registerMultipleFlightsSameRunway();
 
         registerOrderTakeOff("flightCode1", 1);
 
@@ -128,7 +131,94 @@ public class FlightAdministrationServiceImplTest {
         if (!secondPool.awaitTermination(100, TimeUnit.SECONDS)) {
             fail("Threads no terminaron");
         }
+    }
 
+    @Test
+    void reorderTest() throws UniqueFlightCodeConstraintException, UnregistrableFlightException, RemoteException {
+
+        createMultipleRunways(); 
+        registerMultipleFlightsDifferentRunways();
+        registerMultipleFlightsSameRunway();
+
+        assertEquals(3, flightRunwayRepository.getRunway("R3").get().awaitingFlights());
+
+        flightRunwayRepository.createRunway("A4", FlightRunwayCategory.F);
+
+        flightAdministrationService.reorderRunways();
+        
+        List<Flight> flightListA4 = new LinkedList<>();
+        List<Flight> flightListR3 = new LinkedList<>();
+
+        flightRunwayRepository.getRunway("A4").get().listAwaitingFlights(flight -> flightListA4.add(flight));
+
+        flightRunwayRepository.getRunway("R3").get().listAwaitingFlights(flight -> flightListR3.add(flight));
+
+        assertFalse(flightListA4.isEmpty());
+
+        System.out.println("vuelos A4 before reorder:");
+
+        flightListA4.forEach(flight -> System.out.println(flight.getCode()));
+        
+        assertFalse(flightListR3.isEmpty());
+        
+        System.out.println("vuelos R3 before reorder:");
+
+        flightListR3.forEach(flight -> System.out.println(flight.getCode()));
+
+        registerFlight("f1", "CAN", "airline", FlightRunwayCategory.F);
+        registerFlight("f2", "CAN", "airline", FlightRunwayCategory.F);
+        registerFlight("f3", "CAN", "airline", FlightRunwayCategory.F);
+        registerFlight("f4", "CAN", "airline", FlightRunwayCategory.F);
+        registerFlight("f5", "CAN", "airline", FlightRunwayCategory.F);        
+        registerFlight("f6", "CAN", "airline", FlightRunwayCategory.F);
+
+        flightAdministrationService.reorderRunways();
+        
+        List<Flight> flightListA42 = new LinkedList<>();
+        List<Flight> flightListR32 = new LinkedList<>();
+
+        flightRunwayRepository.getRunway("A4").get().listAwaitingFlights(flight -> flightListA42.add(flight));
+
+        flightRunwayRepository.getRunway("R3").get().listAwaitingFlights(flight -> flightListR32.add(flight));
+
+        assertFalse(flightListA42.isEmpty());
+
+        System.out.println("vuelos A4 after reorder:");
+
+        flightListA42.forEach(flight -> System.out.println(flight.getCode()));
+        
+        assertFalse(flightListR32.isEmpty());
+        
+        System.out.println("vuelos R3 after reorder:");
+
+        flightListR32.forEach(flight -> System.out.println(flight.getCode()));
+
+    }
+
+    @Test
+    void reorderAfterClose() throws UniqueFlightCodeConstraintException, UnregistrableFlightException, RemoteException{
+        
+        createMultipleRunways(); 
+        registerMultipleFlightsDifferentRunways();
+        registerMultipleFlightsSameRunway();
+
+        FlightRunway flightRunway = flightRunwayRepository.getRunway("R3").get();
+        assertTrue(flightRunway.isOpen());
+        assertEquals(3, flightRunway.awaitingFlights());
+
+        flightAdministrationService.closeRunway("R3");
+        
+        assertFalse(flightRunway.isOpen());
+        assertEquals(3, flightRunway.awaitingFlights());
+
+        List<String> unassignedFlights = flightAdministrationService.reorderRunways().getUnassignedFlights();
+        
+        assertFalse(unassignedFlights.isEmpty());
+
+        assertEquals("flightCode3", unassignedFlights.get(0));
+        assertEquals("flightCode1f", unassignedFlights.get(1));
+        assertEquals("flightCode2f", unassignedFlights.get(2));
+        
     }
 
     private void createMultipleRunways() {
@@ -163,11 +253,11 @@ public class FlightAdministrationServiceImplTest {
 
     }
 
-    private void registerMultipleFlightsRunways()
+    private void registerMultipleFlightsSameRunway()
             throws UniqueFlightCodeConstraintException, UnregistrableFlightException, RemoteException {
 
-        registerFlight("flightCode1", "airline", "destinationAirport", FlightRunwayCategory.F);
-        registerFlight("flightCode2", "airline", "destinationAirport", FlightRunwayCategory.F);
+        registerFlight("flightCode1f", "airline", "destinationAirport", FlightRunwayCategory.F);
+        registerFlight("flightCode2f", "airline", "destinationAirport", FlightRunwayCategory.F);
 
     }
 
