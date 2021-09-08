@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Consumer;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import ar.edu.itba.pod.exceptions.RunwayNotFoundException;
@@ -135,17 +136,34 @@ public class InMemoryFlightRunwayRepository implements FlightRunwayRepository {
 
         final long[] totalReorderedFlights = {0}; 
         final List<InMemoryFlight> flights = new LinkedList<>();
+        
         final Consumer<InMemoryFlight> flightConsumer = flights::add;
         final Consumer<Flight> subtracUnregistrableFlightsConsumer = f -> totalReorderedFlights[0]--;
         final Consumer<Flight> wrappedUnregistrableConsumer = subtracUnregistrableFlightsConsumer.andThen(unregistrableConsumer);
 
+        boolean flag = true;
+        InMemoryFlight auxFlight;
+        final List<InMemoryFlightRunway> orderedRunways;
         synchronized(runways) {
-            runways.values()
-                .stream()
-                .sorted(RUNWAY_COMPARATOR)
-                .forEach(runway -> runway.cleanRunway(flightConsumer))
-                ;
-
+            orderedRunways = runways.values()
+                            .stream()
+                            .sorted(RUNWAY_COMPARATOR)
+                            .collect(Collectors.toList())
+                            ;
+                
+            while(flag) {
+                flag = false;
+                for (InMemoryFlightRunway runway: orderedRunways) {
+                    auxFlight = runway.popFlight();
+                    if (auxFlight != null) {
+                        flights.add(auxFlight);
+                    }
+                    if (runway.awaitingFlights() > 0) {
+                        flag = true;
+                    }
+                }
+            }
+            
             totalReorderedFlights[0] = flights.size();
 
             flights.forEach(flight -> registerFlight(flight, wrappedUnregistrableConsumer));

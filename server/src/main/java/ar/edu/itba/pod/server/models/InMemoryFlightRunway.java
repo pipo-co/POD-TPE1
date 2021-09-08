@@ -77,6 +77,12 @@ public final class InMemoryFlightRunway implements FlightRunway {
             ;
     }
 
+    public InMemoryFlight popFlight() {
+        synchronized(queueLock) {
+            return queuedFlights.poll();
+        }
+    }
+
     public void cleanRunway(final Consumer<InMemoryFlight> callback) {
         synchronized(queueLock) {
             if(callback != null) {
