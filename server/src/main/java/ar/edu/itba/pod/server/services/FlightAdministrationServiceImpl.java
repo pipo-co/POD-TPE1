@@ -71,9 +71,8 @@ public class FlightAdministrationServiceImpl implements FlightAdministrationServ
     @Override
     public RunwayReorderSummary reorderRunways() throws RemoteException {
         final List<String> unregistrableFlightsCodes = new LinkedList<>();
-        final Consumer<Flight> addFlightCodeConsumer = f -> unregistrableFlightsCodes.add(f.getCode());
 
-        final long assignedFlights = flightRunwayRepository.reorderRunways(addFlightCodeConsumer);
+        final long assignedFlights = flightRunwayRepository.reorderRunways(f -> unregistrableFlightsCodes.add(f.getCode()));
 
         if(!unregistrableFlightsCodes.isEmpty()) {
             unregistrableFlightsCodes.forEach(awaitingFlightsRepository::deleteFlight);
