@@ -25,83 +25,91 @@ public final class FlightAdministrationClient {
         // static class
     }
 
+    public static void executeClient(final FlightAdministrationService service, final String actionName, final String runway, final String categoryName) {
+        try {
+            getAction(actionName).execute(service, runway, categoryName);
+        } catch(final Exception e) {
+            System.err.println(e.getMessage());
+        }
+    }
+
     public static void main(final String[] args) throws RemoteException, NotBoundException {
         logger.info("Flight Administration Client Started");
 
         final Registry registry = getRegistry(System.getProperty("serverAddress", DEFAULT_REGISTRY_ADDRESS));
 
+        final String actionName     = System.getProperty("action");
+        final String runway         = System.getProperty("runway");
+        final String categoryName   = System.getProperty("category");
+
         final FlightAdministrationService service = (FlightAdministrationService) registry.lookup(FlightAdministrationService.CANONICAL_NAME);
 
-        try {
-            getAction().execute(service);
-        } catch(final Exception e) {
-            System.err.println(e.getMessage());
-        }
+        executeClient(service, actionName, runway, categoryName);
 
         logger.info("Flight Administration Client Ended");
     }
 
-    public static void addRunway(final FlightAdministrationService service) throws RemoteException {
+    public static void addRunway(final FlightAdministrationService service, final String actionName, final String runway, final String categoryName) throws RemoteException {
 
-        final String runwayName = getRunwayName();
-        final FlightRunwayCategory category = getCategory();
+        validateRunway(runway);
+        final FlightRunwayCategory category = getCategory(categoryName);
 
         final boolean status;
         try {
-            status = service.createRunway(runwayName, category);
-        } catch(UniqueRunwayNameConstraintException e) {
-            throw new RuntimeException(String.format("There already exists a runway with the name %s.", runwayName), e);
+            status = service.createRunway(runway, category);
+        } catch(final UniqueRunwayNameConstraintException e) {
+            throw new RuntimeException(String.format("There already exists a runway with the name %s.", runway), e);
         }
 
-        System.out.println(getRunwayStatusMessage(runwayName, status));
+        System.out.println(getRunwayStatusMessage(runway, status));
     }
     
-    public static void open(final FlightAdministrationService service) throws RemoteException {
+    public static void open(final FlightAdministrationService service, final String actionName, final String runway, final String categoryName) throws RemoteException {
         
-        final String runwayName = getRunwayName();
+        validateRunway(runway);
+
+        try {
+            service.openRunway(runway);
+        } catch(final RunwayNotFoundException e) {
+            throw new RuntimeException(String.format("Runway with name %s not found. Make sure to call 'open' with an existing runway.", runway), e);
+        }
+
+        System.out.println(getRunwayStatusMessage(runway, true));
+    }
+    
+    public static void close(final FlightAdministrationService service, final String actionName, final String runway, final String categoryName) throws RemoteException {
+        
+        validateRunway(runway);
         
         try {
-            service.openRunway(runwayName);
-        } catch(RunwayNotFoundException e) {
-            throw new RuntimeException(String.format("Runway with name %s not found. Make sure to call 'open' with an existing runway.", runwayName), e);
+            service.closeRunway(runway);
+        } catch(final RunwayNotFoundException e) {
+            throw new RuntimeException(String.format("Runway with name %s not found. Make sure to call 'close' with a existing runway.", runway), e);
         }
 
-        System.out.println(getRunwayStatusMessage(runwayName, true));
+        System.out.println(getRunwayStatusMessage(runway, false));
     }
     
-    public static void close(final FlightAdministrationService service) throws RemoteException {
+    public static void status(final FlightAdministrationService service, final String actionName, final String runway, final String categoryName) throws RemoteException {
         
-        final String runwayName = getRunwayName();
-        
-        try {
-            service.closeRunway(runwayName);
-        } catch(RunwayNotFoundException e) {
-            throw new RuntimeException(String.format("Runway with name %s not found. Make sure to call 'close' with a existing runway.", runwayName), e);
-        }
-
-        System.out.println(getRunwayStatusMessage(runwayName, false));
-    }
-    
-    public static void status(final FlightAdministrationService service) throws RemoteException {
-        
-        final String runwayName = getRunwayName();
+        validateRunway(runway);
         
         final boolean status;
         try {
-            status = service.isRunwayOpen(runwayName);
-        } catch(RunwayNotFoundException e) {
-            throw new RuntimeException(String.format("Runway with name %s not found. Make sure to call 'status' with a existing runway.", runwayName), e);
+            status = service.isRunwayOpen(runway);
+        } catch(final RunwayNotFoundException e) {
+            throw new RuntimeException(String.format("Runway with name %s not found. Make sure to call 'status' with a existing runway.", runway), e);
         }
 
-        System.out.println(getRunwayStatusMessage(runwayName, status));
+        System.out.println(getRunwayStatusMessage(runway, status));
     }
     
-    public static void takeOff(final FlightAdministrationService service) throws RemoteException {
+    public static void takeOff(final FlightAdministrationService service, final String actionName, final String runway, final String categoryName) throws RemoteException {
         service.orderTakeOff();
         System.out.println("Flights departed!");
     }
     
-    public static void reorder(final FlightAdministrationService service) throws RemoteException {
+    public static void reorder(final FlightAdministrationService service, final String actionName, final String runway, final String categoryName) throws RemoteException {
         final RunwayReorderSummary summary = service.reorderRunways();
 
         summary.getUnassignedFlights()
@@ -117,44 +125,37 @@ public final class FlightAdministrationClient {
         return String.format("Runway %s is %s", name, status ? "open" : "close");
     }
 
-    private static String getRunwayName() {
-        
-        final String runway = System.getProperty("runway");
+    private static void validateRunway(final String runway) {
 
         if(runway == null || runway.isBlank()) {
             throw new IllegalArgumentException("'runway' argument must be provided");
         }
-
-        return runway;
     } 
 
-    private static FlightRunwayCategory getCategory() {
+    private static FlightRunwayCategory getCategory(final String categoryName) {
         
         final String errorMessage =  
             "'category' argument must be provided. It should be one of the following values: " 
             + Arrays.stream(FlightRunwayCategory.values()).map(FlightRunwayCategory::toString).collect(Collectors.joining(", "))
             ;
 
-        final String categoryName = System.getProperty("category");
-
         if(categoryName == null) {
             throw new IllegalArgumentException(errorMessage);
         }
 
-        FlightRunwayCategory category;
+        final FlightRunwayCategory category;
 
         try {
-            category = FlightRunwayCategory.valueOf(categoryName); 
-        } catch (IllegalArgumentException e) {
+            category = FlightRunwayCategory.valueOf(categoryName);
+        } catch(final IllegalArgumentException e) {
             throw new IllegalArgumentException(errorMessage);
         }
 
         return category;
     }
 
-    private static Action getAction() {
+    private static Action getAction(final String actionName) {
 
-        final String actionName = System.getProperty("action");
         final String errorMessage = 
             "'action' argument must be provided. It should be one of the following values: " 
             + Arrays.stream(Action.values()).map(Action::getName).collect(Collectors.joining(", "))
@@ -164,9 +165,10 @@ public final class FlightAdministrationClient {
             throw new IllegalArgumentException(errorMessage);
         }
 
-        final Action action = Action.fromName(actionName);
-
-        if(action == null) {
+        final Action action;
+        try {
+            action = Action.valueOf(actionName);
+        } catch (final IllegalArgumentException e) {
             throw new IllegalArgumentException(errorMessage);
         }
 
@@ -198,22 +200,13 @@ public final class FlightAdministrationClient {
             return handler;
         }
 
-        public void execute(final FlightAdministrationService service) throws RemoteException {
-            handler.execute(service);
-        }
-
-        public static Action fromName(final String name) {
-            for(final Action a : Action.values()) {
-                if(a.name.equals(name)) {
-                    return a;
-                }
-            }
-            return null;
+        public void execute(final FlightAdministrationService service, final String runway, final String categoryName) throws RemoteException {
+            handler.execute(service, name, runway, categoryName);
         }
     }
 
     @FunctionalInterface
     private interface FlightAdministrationAction {
-        void execute(final FlightAdministrationService service) throws RemoteException;
+        void execute(final FlightAdministrationService service, final String actionName, final String runway, final String categoryName) throws RemoteException;
     }
 }
