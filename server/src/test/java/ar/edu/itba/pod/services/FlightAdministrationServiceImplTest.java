@@ -96,6 +96,26 @@ public class FlightAdministrationServiceImplTest {
     }
 
     @Test
+    void closedRunwayTakeOff() throws UniqueFlightCodeConstraintException, UnregistrableFlightException, RemoteException {
+        
+        createMultipleRunways();
+        registerMultipleFlightsDifferentRunways();
+
+        assertTrue(awaitingFlightsRepository.getFlight("flightCode1").isPresent());
+        assertTrue(awaitingFlightsRepository.getFlight("flightCode2").isPresent());
+        assertTrue(awaitingFlightsRepository.getFlight("flightCode3").isPresent());
+        
+        flightAdministrationService.closeRunway("R2");
+
+        flightAdministrationService.orderTakeOff();
+
+        assertFalse(awaitingFlightsRepository.getFlight("flightCode1").isPresent());
+        assertFalse(awaitingFlightsRepository.getFlight("flightCode3").isPresent());
+        
+        assertTrue(awaitingFlightsRepository.getFlight("flightCode2").isPresent());
+    }
+
+    @Test
     void multipleTakeOffTests()
             throws UniqueFlightCodeConstraintException, UnregistrableFlightException, RemoteException {
 
@@ -105,8 +125,10 @@ public class FlightAdministrationServiceImplTest {
         registerOrderTakeOff("flightCode1f", 1);
 
         assertTrue(awaitingFlightsRepository.getFlight("flightCode2f").isPresent());
-
+        
         registerOrderTakeOff("flightCode2f", 2);
+
+        assertFalse(awaitingFlightsRepository.getFlight("flightCode2f").isPresent());
     }
 
     @Test
@@ -135,9 +157,11 @@ public class FlightAdministrationServiceImplTest {
         secondPool.invokeAll(secondCallables);
         secondPool.shutdown();
 
-        if(!secondPool.awaitTermination(100, TimeUnit.SECONDS)) {
+        if(!secondPool.awaitTermination(1000, TimeUnit.SECONDS)) {
             fail("Threads no terminaron");
         }
+
+        assertEquals(FLIGHTS_COUNT, flightRunwayRepository.getTakeOffOrderCount());
     }
 
     @Test
@@ -199,7 +223,6 @@ public class FlightAdministrationServiceImplTest {
         System.out.println("vuelos R3 after reorder:");
 
         flightListR32.forEach(flight -> System.out.println(flight.getCode()));
-
     }
 
     @Test
@@ -301,9 +324,10 @@ public class FlightAdministrationServiceImplTest {
     private final Runnable orderTakeOffCounter = () -> {
         long value;
         for (int i = 0; i < FLIGHTS_COUNT / 5; i++) {
-            value = flightRunwayRepository.getTakeOffOrderCount();
+            // value = flightRunwayRepository.getTakeOffOrderCount();
             try {
-                registerOrderTakeOff("dummyFlight", value + 1);
+                flightAdministrationService.orderTakeOff();
+                // registerOrderTakeOff("dummyFlight", value + 1);
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
