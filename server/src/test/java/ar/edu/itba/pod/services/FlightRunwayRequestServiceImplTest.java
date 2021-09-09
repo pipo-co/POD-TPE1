@@ -92,35 +92,6 @@ public class FlightRunwayRequestServiceImplTest {
         flightRunwayRepository.createRunway("R2", FlightRunwayCategory.B);
         flightRunwayRepository.createRunway("R3", FlightRunwayCategory.F);
 
-        Thread[] threads = new Thread[] {
-                new Thread(() -> registerFlight("F1", "COR", "Latam", FlightRunwayCategory.A)),
-                new Thread(() -> registerFlight("F2", "COR", "Latam", FlightRunwayCategory.C)),
-                new Thread(() -> registerFlight("F3", "COR", "Latam", FlightRunwayCategory.D)),
-                new Thread(() -> registerFlight("F4", "COR", "Latam", FlightRunwayCategory.E)),
-                new Thread(() -> registerFlight("F5", "COR", "Latam", FlightRunwayCategory.F)), };
-
-        for (int i = 0; i < threads.length; i++) {
-            threads[i].start();
-        }
-        for (int i = 0; i < threads.length; i++) {
-            threads[i].join();
-        }
-
-        checkFlight("F1");
-        checkFlight("F2");
-        checkFlight("F3");
-        checkFlight("F4");
-        checkFlight("F5");
-
-    }
-
-    @Test
-    void registerMultipleFlights2() throws RemoteException, InterruptedException {
-
-        flightRunwayRepository.createRunway("R1", FlightRunwayCategory.A);
-        flightRunwayRepository.createRunway("R2", FlightRunwayCategory.B);
-        flightRunwayRepository.createRunway("R3", FlightRunwayCategory.F);
-
         final Collection<Callable<Object>> callables = Stream
             .of(flightCreator1, flightCreator2, flightCreator3)
             .map(Executors::callable)
@@ -142,6 +113,8 @@ public class FlightRunwayRequestServiceImplTest {
         for (int i = 0; i < 1000; i++) {
             checkFlight("flightCode3" + i);
         }
+
+        assertEquals(3000, flightRunwayRepository.getRunway("R3").get().awaitingFlights());
     }
 
     private void registerFlight(String code, String destiny, String airline, FlightRunwayCategory category) {

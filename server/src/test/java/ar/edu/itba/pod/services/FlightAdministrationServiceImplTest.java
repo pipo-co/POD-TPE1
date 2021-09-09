@@ -180,15 +180,13 @@ public class FlightAdministrationServiceImplTest {
 
         assertFalse(flightListA4.isEmpty());
 
-        System.out.println("vuelos A4 before reorder:");
+        assertEquals(flightListA4.get(0).getCode(), "flightCode3");
 
-        flightListA4.forEach(flight -> System.out.println(flight.getCode()));
-        
+        assertEquals(flightListA4.get(1).getCode(), "flightCode2f");
+
         assertFalse(flightListR3.isEmpty());
-        
-        System.out.println("vuelos R3 before reorder:");
 
-        flightListR3.forEach(flight -> System.out.println(flight.getCode()));
+        assertEquals(flightListR3.get(0).getCode(), "flightCode1f");
 
         registerFlight("f1", "CAN", "airline", FlightRunwayCategory.F);
         registerFlight("f2", "CAN", "airline", FlightRunwayCategory.F);
@@ -208,15 +206,18 @@ public class FlightAdministrationServiceImplTest {
 
         assertFalse(flightListA42.isEmpty());
 
-        System.out.println("vuelos A4 after reorder:");
+        assertEquals(flightListA42.get(0).getCode(), "flightCode3");
 
-        flightListA42.forEach(flight -> System.out.println(flight.getCode()));
-        
+        assertEquals(flightListA42.get(1).getCode(), "flightCode2f");
+
+        assertEquals(flightListA42.get(2).getCode(), "f2");
+
         assertFalse(flightListR32.isEmpty());
         
-        System.out.println("vuelos R3 after reorder:");
+        assertEquals(flightListR32.get(0).getCode(), "flightCode1f");
+        
+        assertEquals(flightListR32.get(1).getCode(), "f1");
 
-        flightListR32.forEach(flight -> System.out.println(flight.getCode()));
     }
 
     @Test
