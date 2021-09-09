@@ -167,7 +167,7 @@ public final class FlightAdministrationClient {
 
         final Action action;
         try {
-            action = Action.valueOf(actionName);
+            action = Action.fromName(actionName);
         } catch (final IllegalArgumentException e) {
             throw new IllegalArgumentException(errorMessage);
         }
@@ -184,6 +184,8 @@ public final class FlightAdministrationClient {
         REORDER ("reorder", FlightAdministrationClient::reorder     ),
         ;
 
+        private static final Action[] VALUES = Action.values();
+        
         private final String                        name;
         private final FlightAdministrationAction    handler;
 
@@ -198,6 +200,15 @@ public final class FlightAdministrationClient {
 
         public FlightAdministrationAction getHandler() {
             return handler;
+        }
+
+        public static Action fromName(final String name) {
+            for(final Action a : VALUES) {
+                if(a.name.equals(name)) {
+                    return a;
+                }
+            }
+            return null;
         }
 
         public void execute(final FlightAdministrationService service, final String runway, final String categoryName) throws RemoteException {
