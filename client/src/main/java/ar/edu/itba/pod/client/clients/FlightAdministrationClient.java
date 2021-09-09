@@ -110,7 +110,7 @@ public final class FlightAdministrationClient {
             .forEach(System.out::println)
             ;
 
-        System.out.printf("%d flights assigned", summary.getAssignedFlights());
+        System.out.printf("%d flights assigned \n", summary.getAssignedFlights());
     }
 
     private static String getRunwayStatusMessage(final String name, final boolean status) {

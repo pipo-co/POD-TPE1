@@ -14,6 +14,8 @@ public interface AwaitingFlightsRepository {
 
     Optional<Flight> getFlight(final String code);
 
+    int getAwaitingFlightsCount();
+
     void deleteFlight(final String code);
 
     void addSubscriptionToFlight(final String flightCode, final FlightRunwayEventConsumer callback) throws FlightNotFoundException;

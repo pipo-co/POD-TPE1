@@ -1,6 +1,10 @@
 package ar.edu.itba.pod.services;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.rmi.RemoteException;
 import java.util.Collection;
@@ -13,8 +17,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import javax.management.RuntimeErrorException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +47,8 @@ public class FlightAdministrationServiceImplTest {
     private FlightAdministrationService flightAdministrationService;
 
     private final ExecutorService pool = Executors.newCachedThreadPool();
+
+    private static final int FLIGHTS_COUNT = 1_000; 
 
     @BeforeEach
     private void beforeEach() {
@@ -78,6 +82,10 @@ public class FlightAdministrationServiceImplTest {
         createMultipleRunways();
         registerMultipleFlightsDifferentRunways();
 
+        assertTrue(awaitingFlightsRepository.getFlight("flightCode1").isPresent());
+        assertTrue(awaitingFlightsRepository.getFlight("flightCode2").isPresent());
+        assertTrue(awaitingFlightsRepository.getFlight("flightCode3").isPresent());
+        
         flightAdministrationService.orderTakeOff();
 
         assertFalse(awaitingFlightsRepository.getFlight("flightCode1").isPresent());
@@ -85,7 +93,6 @@ public class FlightAdministrationServiceImplTest {
         assertFalse(awaitingFlightsRepository.getFlight("flightCode3").isPresent());
 
         assertEquals(1, flightRunwayRepository.getTakeOffOrderCount());
-
     }
 
     @Test
@@ -95,12 +102,11 @@ public class FlightAdministrationServiceImplTest {
         createMultipleRunways();
         registerMultipleFlightsSameRunway();
 
-        registerOrderTakeOff("flightCode1", 1);
+        registerOrderTakeOff("flightCode1f", 1);
 
-        assertTrue(awaitingFlightsRepository.getFlight("flightCode2").isPresent());
+        assertTrue(awaitingFlightsRepository.getFlight("flightCode2f").isPresent());
 
-        registerOrderTakeOff("flightCode2", 2);
-
+        registerOrderTakeOff("flightCode2f", 2);
     }
 
     @Test
@@ -119,8 +125,9 @@ public class FlightAdministrationServiceImplTest {
             fail("Threads no terminaron");
         }
 
-        final ExecutorService secondPool = Executors.newCachedThreadPool();
+        assertEquals(3 * FLIGHTS_COUNT, awaitingFlightsRepository.getAwaitingFlightsCount());
 
+        final ExecutorService secondPool = Executors.newCachedThreadPool();
 
         final Collection<Callable<Object>> secondCallables = Stream.of(orderTakeOffCounter, orderTakeOffCounter, orderTakeOffCounter, orderTakeOffCounter, orderTakeOffCounter)
                 .map(Executors::callable).collect(Collectors.toList());
@@ -128,7 +135,7 @@ public class FlightAdministrationServiceImplTest {
         secondPool.invokeAll(secondCallables);
         secondPool.shutdown();
 
-        if (!secondPool.awaitTermination(100, TimeUnit.SECONDS)) {
+        if(!secondPool.awaitTermination(100, TimeUnit.SECONDS)) {
             fail("Threads no terminaron");
         }
     }
@@ -274,31 +281,30 @@ public class FlightAdministrationServiceImplTest {
     }
 
     private final Runnable flightCreator1 = () -> {
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < FLIGHTS_COUNT; i++) {
             registerFlight("flightCode1" + i, "COR", "Aerolineas Argentinas", FlightRunwayCategory.A);
         }
     };
 
     private final Runnable flightCreator2 = () -> {
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < FLIGHTS_COUNT; i++) {
             registerFlight("flightCode2" + i, "COR", "Aerolineas Argentinas", FlightRunwayCategory.B);
         }
     };
 
     private final Runnable flightCreator3 = () -> {
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < FLIGHTS_COUNT; i++) {
             registerFlight("flightCode3" + i, "COR", "Aerolineas Argentinas", FlightRunwayCategory.F);
         }
     };
 
     private final Runnable orderTakeOffCounter = () -> {
         long value;
-        for (int i = 0; i < 200; i++) {
+        for (int i = 0; i < FLIGHTS_COUNT / 5; i++) {
             value = flightRunwayRepository.getTakeOffOrderCount();
             try {
                 registerOrderTakeOff("dummyFlight", value + 1);
             } catch (RemoteException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }

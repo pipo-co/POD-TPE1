@@ -30,10 +30,17 @@ public class InMemoryAwaitingFlightsRepository implements AwaitingFlightsReposit
         return flight;
     }
     
+    @Override
     public Optional<Flight> getFlight(final String code) {
         return Optional.ofNullable(flights.get(code));
     }
 
+    @Override
+    public int getAwaitingFlightsCount() {
+        return flights.size();
+    }
+
+    @Override
     public void deleteFlight(final String code) {
         flights.remove(code);
     }
