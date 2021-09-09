@@ -19,7 +19,6 @@ import ar.edu.itba.pod.interfaces.FlightRunwayRequestService;
 import ar.edu.itba.pod.models.Flight;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
 import ar.edu.itba.pod.models.FlightRunwayEvent;
-import ar.edu.itba.pod.models.FlightTakeOff;
 import ar.edu.itba.pod.server.repositories.AwaitingFlightsRepository;
 import ar.edu.itba.pod.server.repositories.FlightRunwayRepository;
 import ar.edu.itba.pod.server.repositories.FlightTakeOffRepository;
@@ -39,21 +38,6 @@ public class FlightTrackingServiceImplTest {
     private FlightRunwayRequestService flightRunwayRequestService;
     private FlightTrackingServiceImpl flightTrackingService;
     private FlightAdministrationServiceImpl flightAdministrationService;
-    private List<String> runwayProgress;
-    private List<String> runwayAssignment;
-    private List<String> takeoffs;
-
-    private FlightRunwayEventConsumer flightRunwayEventConsumer = flightEvent -> {
-        if (flightEvent.getType() == FlightRunwayEvent.EventType.FLIGHT_TAKE_OFF) {
-            takeoffs.add("Flight takeoff " + flightEvent.getFlight());
-        }
-        else if (flightEvent.getType() == FlightRunwayEvent.EventType.RUNWAY_ASSIGNMENT) {
-            runwayAssignment.add("Flight " + flightEvent.getFlight() + " was reasigned to runway: " + flightEvent.getRunway());
-        }
-        else {
-            runwayProgress.add("Flight " + flightEvent.getFlight() + " progressed to position: " + flightEvent.getPosition());
-        }
-    };
 
     @BeforeEach
     private void beforeEach() {
@@ -61,10 +45,6 @@ public class FlightTrackingServiceImplTest {
         this.flightRunwayRepository = new InMemoryFlightRunwayRepository();
         this.awaitingFlightsRepository = new InMemoryAwaitingFlightsRepository();
         this.flightTakeOffRepository = new InMemoryFlightTakeOffRepository();
-
-        this.runwayProgress = new LinkedList<>();
-        this.runwayAssignment = new LinkedList<>();
-        this.takeoffs = new LinkedList<>();
         
         this.flightAdministrationService = new FlightAdministrationServiceImpl(flightRunwayRepository, flightTakeOffRepository, awaitingFlightsRepository);
         this.flightRunwayRequestService = new FlightRunwayRequestServiceImpl(flightRunwayRepository, awaitingFlightsRepository);
@@ -73,7 +53,7 @@ public class FlightTrackingServiceImplTest {
 
     @Test
     public void tracknonExistentFlight(){
-        assertThrows(FlightNotFoundException.class, () -> flightTrackingService.suscribeToFlight("Aerolineas", "Flight1", flightRunwayEventConsumer));
+        assertThrows(FlightNotFoundException.class, () -> flightTrackingService.suscribeToFlight("Aerolineas", "Flight1", e-> {}));
     }
 
     @Test
@@ -83,11 +63,13 @@ public class FlightTrackingServiceImplTest {
 
         registerFlight("f1", "COR", "LAM", FlightRunwayCategory.A);
         
-        assertThrows(AirlineFlightMismatchException.class, () -> flightTrackingService.suscribeToFlight("Aerolineas", "f1", flightRunwayEventConsumer));
+        assertThrows(AirlineFlightMismatchException.class, () -> flightTrackingService.suscribeToFlight("Aerolineas", "f1", e -> {}));
     }
 
     @Test
-    public void trackFlightRunwayProgressed() throws FlightNotFoundException, AirlineFlightMismatchException, RemoteException{
+    public void trackFlightRunwayProgressed() throws FlightNotFoundException, AirlineFlightMismatchException, RemoteException, InterruptedException{
+
+        List<String> runwayProgress = new LinkedList<>();
 
         flightRunwayRepository.createRunway("R1", FlightRunwayCategory.A);
 
@@ -95,16 +77,24 @@ public class FlightTrackingServiceImplTest {
 
         registerFlight("f2", "COR", "Aerolineas", FlightRunwayCategory.A);
 
-        flightTrackingService.suscribeToFlight("Aerolineas", "f2", flightRunwayEventConsumer);
+        flightTrackingService.suscribeToFlight("Aerolineas", "f2", e -> {
+            if (e.getType() == FlightRunwayEvent.EventType.RUNWAY_PROGRESS) {
+                runwayProgress.add("Flight " + e.getFlight() + " progressed to position: " + e.getPosition());
+            }
+        });
 
         flightAdministrationService.orderTakeOff();
+
+        Thread.sleep(1000);
 
         assertEquals("Flight f2 progressed to position: 0", runwayProgress.get(0));
         
     }
 
     @Test
-    public void trackFlightRunwayAssignment() throws FlightNotFoundException, AirlineFlightMismatchException, RemoteException{
+    public void trackFlightRunwayAssignment() throws FlightNotFoundException, AirlineFlightMismatchException, RemoteException, InterruptedException{
+
+        List<String> runwayAssignment = new LinkedList<>();
 
         flightRunwayRepository.createRunway("R1", FlightRunwayCategory.A);
 
@@ -114,24 +104,38 @@ public class FlightTrackingServiceImplTest {
 
         flightRunwayRepository.createRunway("R2", FlightRunwayCategory.A);
 
-        flightTrackingService.suscribeToFlight("Aerolineas", "f2", flightRunwayEventConsumer);
-
+        flightTrackingService.suscribeToFlight("Aerolineas", "f2", e -> {
+            if (e.getType() == FlightRunwayEvent.EventType.RUNWAY_ASSIGNMENT) {
+                runwayAssignment.add("Flight " + e.getFlight() + " was reasigned to runway: " + e.getRunway());
+            }
+        });
+        
         flightAdministrationService.reorderRunways();
+
+        Thread.sleep(1000);
         
         assertEquals("Flight f2 was reasigned to runway: R2", runwayAssignment.get(0));
         
     }
 
     @Test
-    public void trackFlightOrderTakeoff() throws FlightNotFoundException, AirlineFlightMismatchException, RemoteException{
+    public void trackFlightOrderTakeoff() throws FlightNotFoundException, AirlineFlightMismatchException, RemoteException, InterruptedException{
+
+        List<String> takeoffs = new LinkedList<>();
 
         flightRunwayRepository.createRunway("R1", FlightRunwayCategory.A);
 
         registerFlight("f1", "COR", "Aerolineas", FlightRunwayCategory.A);
 
-        flightTrackingService.suscribeToFlight("Aerolineas", "f1", flightRunwayEventConsumer);
-
+        flightTrackingService.suscribeToFlight("Aerolineas", "f1", e -> {
+            if (e.getType() == FlightRunwayEvent.EventType.FLIGHT_TAKE_OFF) {
+                takeoffs.add("Flight takeoff " + e.getFlight());
+            }
+        });
+        
         flightAdministrationService.orderTakeOff();
+        
+        Thread.sleep(1000);
 
         assertEquals("Flight takeoff f1", takeoffs.get(0));
         
