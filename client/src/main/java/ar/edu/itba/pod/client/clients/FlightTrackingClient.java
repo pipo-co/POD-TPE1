@@ -20,14 +20,18 @@ public final class FlightTrackingClient {
         // static class
     }
 
+    public static void executeClient(final FlightTrackingService service, final String airline, final String flightCode, final FlightRunwayEventConsumer callback) throws RemoteException {
+        service.suscribeToFlight(airline, flightCode, callback);
+    }
+
     public static void main(final String[] args) throws RemoteException, NotBoundException {
         logger.info("Flight Tracking Client Started");
 
         final Registry registry = getRegistry(System.getProperty("serverAddress", DEFAULT_REGISTRY_ADDRESS));
 
-        final String airline = System.getProperty("airlineName");
+        final String airline = System.getProperty("airline");
         if(airline == null) {
-            throw new IllegalArgumentException("Argument 'airlineName' is mandatory");
+            throw new IllegalArgumentException("Argument 'airline' is mandatory");
         }
 
         final String flightCode = System.getProperty("flightCode");
@@ -38,14 +42,15 @@ public final class FlightTrackingClient {
         final FlightTrackingService service = (FlightTrackingService) registry.lookup(FlightTrackingService.CANONICAL_NAME);
 
         final FlightRunwayEventConsumer callback = new RunwayEventCallback();
+
         UnicastRemoteObject.exportObject(callback, 0);
 
-        service.suscribeToFlight(airline, flightCode, callback);
+        executeClient(service, airline, flightCode, callback);
 
         logger.info("Flight Tracking Client Ended");
     }
 
-    private static final class RunwayEventCallback implements FlightRunwayEventConsumer {
+    public static final class RunwayEventCallback implements FlightRunwayEventConsumer {
 
         @Override
         public void accept(final FlightRunwayEvent e) throws RemoteException {

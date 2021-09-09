@@ -25,23 +25,8 @@ public final class FlightRunwayRequestClient {
         // static class
     }
 
-    public static void main(final String[] args) throws IOException, NotBoundException {
-        logger.info("Flight Runway Request Client Started");
-
-        final Registry registry = getRegistry(System.getProperty("serverAddress", DEFAULT_REGISTRY_ADDRESS));
-
-        final String csvPath = System.getProperty("inPath");
-        if(csvPath == null) {
-            throw new IllegalArgumentException("Missing 'inPath' system property pointing to csv input file");
-        }
-        final Path csv = Path.of(csvPath);
-        if(!Files.isRegularFile(csv)) {
-            throw new IllegalArgumentException("'inPath' must point to a regular file");
-        }
-
-        final FlightRunwayRequestService service = (FlightRunwayRequestService) registry.lookup(FlightRunwayRequestService.CANONICAL_NAME);
-
-        try(final Stream<String> runwayRequestLines = Files.lines(csv)) {
+    public static void executeClient(final FlightRunwayRequestService service, final Path requestCsv) throws IOException {
+        try(final Stream<String> runwayRequestLines = Files.lines(requestCsv)) {
             final long totalRequests = runwayRequestLines
                 // El primero es el header
                 .skip(1)
@@ -53,6 +38,25 @@ public final class FlightRunwayRequestClient {
 
             System.out.println(totalRequests + " flights assigned.");
         }
+    }
+
+    public static void main(final String[] args) throws IOException, NotBoundException {
+        logger.info("Flight Runway Request Client Started");
+
+        final Registry registry = getRegistry(System.getProperty("serverAddress", DEFAULT_REGISTRY_ADDRESS));
+
+        final String csvPath = System.getProperty("inPath");
+        if(csvPath == null) {
+            throw new IllegalArgumentException("Missing 'inPath' system property pointing to csv input file");
+        }
+        final Path requestsCsv = Path.of(csvPath);
+        if(!Files.isRegularFile(requestsCsv)) {
+            throw new IllegalArgumentException("'inPath' must point to a regular file");
+        }
+
+        final FlightRunwayRequestService service = (FlightRunwayRequestService) registry.lookup(FlightRunwayRequestService.CANONICAL_NAME);
+
+        executeClient(service, requestsCsv);
 
         logger.info("Flight Runway Request Client Ended");
     }
