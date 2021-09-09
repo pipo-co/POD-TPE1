@@ -25,7 +25,7 @@ public final class FlightInfoClient {
         // static class
     }
 
-    public static void executeClient(final FlightInfoService service, final String outFile, final String runway, final String airline) {
+    public static void executeClient(final FlightInfoService service, final String outPath, final String runway, final String airline) {
         try {
             final List<FlightTakeOff> takeOffs;
 
@@ -37,7 +37,7 @@ public final class FlightInfoClient {
                 takeOffs = service.queryAirlineTakeOffs(airline);
             }
 
-            writeOutFile(takeOffs, outFile);
+            writeOutFile(takeOffs, outPath);
         } catch(final Exception e) {
             System.err.println(e.getMessage());
         }
@@ -46,12 +46,12 @@ public final class FlightInfoClient {
     public static void main(final String[] args) throws RemoteException, NotBoundException {
         logger.info("Flight Info Client Started");
 
-        final String outFile = System.getProperty("outFile");
+        final String outPath = System.getProperty("outPath");
         final String runway   = System.getProperty("runway");
         final String airline  = System.getProperty("airline");
 
-        if(outFile == null) {
-            throw new IllegalArgumentException("'outFile' argument must be provided");
+        if(outPath == null) {
+            throw new IllegalArgumentException("'outPath' argument must be provided");
         }
         if(runway != null && airline != null){
             throw new IllegalArgumentException("You can only run one query at a time.");
@@ -61,13 +61,13 @@ public final class FlightInfoClient {
 
         final FlightInfoService service = (FlightInfoService) registry.lookup(FlightInfoService.CANONICAL_NAME);
 
-        executeClient(service, outFile, runway, airline);
+        executeClient(service, outPath, runway, airline);
 
         logger.info("Flight Information Client Ended");
     }
 
-    private static void writeOutFile(final List<FlightTakeOff> takeOffs, final String fileName) throws IOException {
-        try(final BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+    private static void writeOutFile(final List<FlightTakeOff> takeOffs, final String outPath) throws IOException {
+        try(final BufferedWriter writer = new BufferedWriter(new FileWriter(outPath))) {
             writer.write(HEADER);
 
             for(final FlightTakeOff takeOff : takeOffs) {
