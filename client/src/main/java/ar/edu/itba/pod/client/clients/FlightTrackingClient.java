@@ -1,6 +1,8 @@
 package ar.edu.itba.pod.client.clients;
 
 import ar.edu.itba.pod.callbacks.FlightRunwayEventConsumer;
+import ar.edu.itba.pod.exceptions.AirlineFlightMismatchException;
+import ar.edu.itba.pod.exceptions.FlightNotFoundException;
 import ar.edu.itba.pod.interfaces.FlightTrackingService;
 import ar.edu.itba.pod.models.FlightRunwayEvent;
 import org.slf4j.Logger;
@@ -10,6 +12,8 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+
+import javax.management.RuntimeErrorException;
 
 import static ar.edu.itba.pod.client.ClientUtils.*;
 
@@ -21,7 +25,13 @@ public final class FlightTrackingClient {
     }
 
     public static void executeClient(final FlightTrackingService service, final String airline, final String flightCode, final FlightRunwayEventConsumer callback) throws RemoteException {
-        service.suscribeToFlight(airline, flightCode, callback);
+        try {
+            service.suscribeToFlight(airline, flightCode, callback);
+        } catch (FlightNotFoundException e) {
+            throw new RuntimeException("Flight not found. It either wasn't registered yet or has already departed.");
+        } catch (AirlineFlightMismatchException e) {
+            throw new RuntimeException("This flight doesn't match the specified airline.");
+        }
     }
 
     public static void main(final String[] args) throws RemoteException, NotBoundException {
@@ -45,7 +55,12 @@ public final class FlightTrackingClient {
 
         UnicastRemoteObject.exportObject(callback, 0);
 
-        executeClient(service, airline, flightCode, callback);
+        try {
+            executeClient(service, airline, flightCode, callback);
+        } catch(final Exception e) {
+            System.err.println(e.getMessage());
+            UnicastRemoteObject.unexportObject(callback, true);
+        }
 
         logger.info("Flight Tracking Client Ended");
     }
