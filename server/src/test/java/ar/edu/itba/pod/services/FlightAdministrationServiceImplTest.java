@@ -4,19 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.rmi.RemoteException;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,25 +37,29 @@ import ar.edu.itba.pod.server.services.FlightRunwayRequestServiceImpl;
 
 public class FlightAdministrationServiceImplTest {
 
-    private FlightRunwayRepository flightRunwayRepository;
-    private AwaitingFlightsRepository awaitingFlightsRepository;
-    private FlightTakeOffRepository flightTakeOffRepository;
-    private FlightRunwayRequestService flightRunwayRequestService;
+    private FlightRunwayRepository      flightRunwayRepository;
+    private AwaitingFlightsRepository   awaitingFlightsRepository;
+    private FlightTakeOffRepository     flightTakeOffRepository;
+    private FlightRunwayRequestService  flightRunwayRequestService;
     private FlightAdministrationService flightAdministrationService;
 
     private final ExecutorService pool = Executors.newCachedThreadPool();
 
-    private static final int FLIGHTS_COUNT = 1_000; 
+    private static final int FLIGHTS_COUNT  = 1_000;
+    private static final int THREAD_COUNT   = 20;
 
     @BeforeEach
     private void beforeEach() {
-        this.flightRunwayRepository = new InMemoryFlightRunwayRepository();
-        this.awaitingFlightsRepository = new InMemoryAwaitingFlightsRepository();
-        this.flightTakeOffRepository = new InMemoryFlightTakeOffRepository();
-        this.flightRunwayRequestService = new FlightRunwayRequestServiceImpl(flightRunwayRepository,
-                awaitingFlightsRepository);
-        this.flightAdministrationService = new FlightAdministrationServiceImpl(flightRunwayRepository,
-                flightTakeOffRepository, awaitingFlightsRepository);
+        this.flightRunwayRepository     = new InMemoryFlightRunwayRepository();
+        this.awaitingFlightsRepository  = new InMemoryAwaitingFlightsRepository();
+        this.flightTakeOffRepository    = new InMemoryFlightTakeOffRepository();
+
+        this.flightRunwayRequestService = new FlightRunwayRequestServiceImpl(
+            flightRunwayRepository, awaitingFlightsRepository
+        );
+        this.flightAdministrationService = new FlightAdministrationServiceImpl(
+            flightRunwayRepository, flightTakeOffRepository, awaitingFlightsRepository
+        );
     }
 
     @Test
@@ -117,7 +118,7 @@ public class FlightAdministrationServiceImplTest {
 
     @Test
     void multipleTakeOffTests()
-            throws UniqueFlightCodeConstraintException, UnregistrableFlightException, RemoteException {
+            throws UniqueFlightCodeConstraintException, UnregistrableFlightException {
 
         createMultipleRunways();
         registerMultipleFlightsSameRunway();
@@ -132,36 +133,29 @@ public class FlightAdministrationServiceImplTest {
     }
 
     @Test
-    void multipleThreadTakeOff() throws UniqueFlightCodeConstraintException, UnregistrableFlightException,
-            RemoteException, InterruptedException {
+    void multipleThreadTakeOff() throws UniqueFlightCodeConstraintException, UnregistrableFlightException, InterruptedException {
 
         createMultipleRunways();
 
-        final Collection<Callable<Object>> callables = Stream.of(flightCreator1, flightCreator2, flightCreator3)
-                .map(Executors::callable).collect(Collectors.toList());
+        final List<Callable<Object>> flightCreators = IntStream.range(0, THREAD_COUNT)
+            .mapToObj(this::buildFlightCreatorRunnable)
+            .map(Executors::callable)
+            .collect(Collectors.toList())
+            ;
 
-        pool.invokeAll(callables);
-        pool.shutdown();
+        pool.invokeAll(flightCreators);
 
-        if (!pool.awaitTermination(100, TimeUnit.SECONDS)) {
-            fail("Threads no terminaron");
-        }
+        assertEquals(THREAD_COUNT * FLIGHTS_COUNT, awaitingFlightsRepository.getAwaitingFlightsCount());
 
-        assertEquals(3 * FLIGHTS_COUNT, awaitingFlightsRepository.getAwaitingFlightsCount());
+        final List<Callable<Object>> takeOffOrders = IntStream.range(0, 5 * THREAD_COUNT)
+            .mapToObj(i -> buildOrderTakeOffCounter())
+            .map(Executors::callable)
+            .collect(Collectors.toList())
+            ;
 
-        final ExecutorService secondPool = Executors.newCachedThreadPool();
+        pool.invokeAll(takeOffOrders);
 
-        final Collection<Callable<Object>> secondCallables = Stream.of(orderTakeOffCounter, orderTakeOffCounter, orderTakeOffCounter, orderTakeOffCounter, orderTakeOffCounter)
-                .map(Executors::callable).collect(Collectors.toList());
-
-        secondPool.invokeAll(secondCallables);
-        secondPool.shutdown();
-
-        if(!secondPool.awaitTermination(1000, TimeUnit.SECONDS)) {
-            fail("Threads no terminaron");
-        }
-
-        assertEquals(FLIGHTS_COUNT, flightRunwayRepository.getTakeOffOrderCount());
+        assertEquals(THREAD_COUNT * FLIGHTS_COUNT, flightRunwayRepository.getTakeOffOrderCount());
     }
 
     @Test
@@ -180,9 +174,9 @@ public class FlightAdministrationServiceImplTest {
         List<Flight> flightListA4 = new LinkedList<>();
         List<Flight> flightListR3 = new LinkedList<>();
 
-        flightRunwayRepository.getRunway("A4").get().listAwaitingFlights(flight -> flightListA4.add(flight));
+        flightRunwayRepository.getRunway("A4").get().listAwaitingFlights(flightListA4::add);
 
-        flightRunwayRepository.getRunway("R3").get().listAwaitingFlights(flight -> flightListR3.add(flight));
+        flightRunwayRepository.getRunway("R3").get().listAwaitingFlights(flightListR3::add);
 
         assertFalse(flightListA4.isEmpty());
 
@@ -208,9 +202,9 @@ public class FlightAdministrationServiceImplTest {
         List<Flight> flightListA42 = new LinkedList<>();
         List<Flight> flightListR32 = new LinkedList<>();
 
-        flightRunwayRepository.getRunway("A4").get().listAwaitingFlights(flight -> flightListA42.add(flight));
+        flightRunwayRepository.getRunway("A4").get().listAwaitingFlights(flightListA42::add);
 
-        flightRunwayRepository.getRunway("R3").get().listAwaitingFlights(flight -> flightListR32.add(flight));
+        flightRunwayRepository.getRunway("R3").get().listAwaitingFlights(flightListR32::add);
 
         assertFalse(flightListA42.isEmpty());
 
@@ -275,7 +269,7 @@ public class FlightAdministrationServiceImplTest {
     }
 
     private void registerMultipleFlightsDifferentRunways()
-            throws UniqueFlightCodeConstraintException, UnregistrableFlightException, RemoteException {
+            throws UniqueFlightCodeConstraintException, UnregistrableFlightException {
 
         registerFlight("flightCode1", "airline", "destinationAirport", FlightRunwayCategory.A);
         registerFlight("flightCode2", "airline", "destinationAirport", FlightRunwayCategory.B);
@@ -284,14 +278,14 @@ public class FlightAdministrationServiceImplTest {
     }
 
     private void registerMultipleFlightsSameRunway()
-            throws UniqueFlightCodeConstraintException, UnregistrableFlightException, RemoteException {
+            throws UniqueFlightCodeConstraintException, UnregistrableFlightException {
 
         registerFlight("flightCode1f", "airline", "destinationAirport", FlightRunwayCategory.F);
         registerFlight("flightCode2f", "airline", "destinationAirport", FlightRunwayCategory.F);
 
     }
 
-    private void registerOrderTakeOff(String flightCode, long expectedCount) throws RemoteException {
+    private void registerOrderTakeOff(String flightCode, long expectedCount) {
         
         try {
             flightAdministrationService.orderTakeOff();
@@ -303,34 +297,23 @@ public class FlightAdministrationServiceImplTest {
         assertEquals(expectedCount, flightRunwayRepository.getTakeOffOrderCount());
     }
 
-    private final Runnable flightCreator1 = () -> {
-        for (int i = 0; i < FLIGHTS_COUNT; i++) {
-            registerFlight("flightCode1" + i, "COR", "Aerolineas Argentinas", FlightRunwayCategory.A);
-        }
-    };
-
-    private final Runnable flightCreator2 = () -> {
-        for (int i = 0; i < FLIGHTS_COUNT; i++) {
-            registerFlight("flightCode2" + i, "COR", "Aerolineas Argentinas", FlightRunwayCategory.B);
-        }
-    };
-
-    private final Runnable flightCreator3 = () -> {
-        for (int i = 0; i < FLIGHTS_COUNT; i++) {
-            registerFlight("flightCode3" + i, "COR", "Aerolineas Argentinas", FlightRunwayCategory.F);
-        }
-    };
-
-    private final Runnable orderTakeOffCounter = () -> {
-        long value;
-        for (int i = 0; i < FLIGHTS_COUNT / 5; i++) {
-            // value = flightRunwayRepository.getTakeOffOrderCount();
-            try {
-                flightAdministrationService.orderTakeOff();
-                // registerOrderTakeOff("dummyFlight", value + 1);
-            } catch (RemoteException e) {
-                e.printStackTrace();
+    private Runnable buildFlightCreatorRunnable(final int id) {
+        return () -> {
+            for(int i = 0; i < FLIGHTS_COUNT; i++) {
+                registerFlight("flightCode-" + id + "-" + i, "COR", "airline", FlightRunwayCategory.VALUES.get(id % FlightRunwayCategory.SIZE));
             }
-        }
-    };
+        };
+    }
+
+    private Runnable buildOrderTakeOffCounter() {
+        return () -> {
+            for (int i = 0; i < FLIGHTS_COUNT / 5; i++) {
+                try {
+                    flightAdministrationService.orderTakeOff();
+                } catch (final RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+    }
 }
