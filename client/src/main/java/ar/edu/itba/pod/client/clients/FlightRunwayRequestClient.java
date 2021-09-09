@@ -63,7 +63,7 @@ public final class FlightRunwayRequestClient {
         try {
             service.registerFlight(request.getFlightCode(), request.getAirlineName(), request.getDestinyAirport(), request.getCategory());
         } catch(final UnregistrableFlightException e) {
-            System.err.printf("Cannot assign Flight %s.", request.getFlightCode());
+            System.err.printf("Cannot assign Flight %s.%n", request.getFlightCode());
             ret = false;
         } catch(final UniqueFlightCodeConstraintException e) {
             System.err.printf("There already exists a registered flight with code %s.%n", request.getFlightCode());
