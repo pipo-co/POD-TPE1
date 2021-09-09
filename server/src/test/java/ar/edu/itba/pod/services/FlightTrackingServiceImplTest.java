@@ -12,7 +12,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import ar.edu.itba.pod.callbacks.FlightRunwayEventConsumer;
 import ar.edu.itba.pod.exceptions.AirlineFlightMismatchException;
 import ar.edu.itba.pod.exceptions.FlightNotFoundException;
 import ar.edu.itba.pod.interfaces.FlightRunwayRequestService;

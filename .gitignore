@@ -35,4 +35,4 @@ target/
 .idea/
 *.iml
 
-test/
+testFiles/
