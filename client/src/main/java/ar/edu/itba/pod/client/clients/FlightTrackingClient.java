@@ -1,21 +1,21 @@
 package ar.edu.itba.pod.client.clients;
 
-import ar.edu.itba.pod.callbacks.FlightRunwayEventConsumer;
-import ar.edu.itba.pod.exceptions.AirlineFlightMismatchException;
-import ar.edu.itba.pod.exceptions.FlightNotFoundException;
-import ar.edu.itba.pod.interfaces.FlightTrackingService;
-import ar.edu.itba.pod.models.FlightRunwayEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static ar.edu.itba.pod.client.ClientUtils.DEFAULT_REGISTRY_ADDRESS;
+import static ar.edu.itba.pod.client.ClientUtils.getRegistry;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-import javax.management.RuntimeErrorException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static ar.edu.itba.pod.client.ClientUtils.*;
+import ar.edu.itba.pod.callbacks.FlightRunwayEventConsumer;
+import ar.edu.itba.pod.exceptions.AirlineFlightMismatchException;
+import ar.edu.itba.pod.exceptions.FlightNotFoundException;
+import ar.edu.itba.pod.interfaces.FlightTrackingService;
+import ar.edu.itba.pod.models.FlightRunwayEvent;
 
 public final class FlightTrackingClient {
     private static final Logger logger = LoggerFactory.getLogger(FlightTrackingClient.class);

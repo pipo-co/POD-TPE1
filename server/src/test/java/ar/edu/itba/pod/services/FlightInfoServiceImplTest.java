@@ -24,7 +24,6 @@ import ar.edu.itba.pod.server.repositories.impls.InMemoryFlightTakeOffRepository
 import ar.edu.itba.pod.server.services.FlightAdministrationServiceImpl;
 import ar.edu.itba.pod.server.services.FlightInfoServiceImpl;
 import ar.edu.itba.pod.server.services.FlightRunwayRequestServiceImpl;
-import ar.edu.itba.pod.server.services.FlightTrackingServiceImpl;
 
 public class FlightInfoServiceImplTest {
     
@@ -33,7 +32,6 @@ public class FlightInfoServiceImplTest {
     private FlightTakeOffRepository flightTakeOffRepository;
     
     private FlightRunwayRequestService flightRunwayRequestService;
-    private FlightTrackingServiceImpl flightTrackingService;
     private FlightInfoServiceImpl flightInfoService;
     private FlightAdministrationServiceImpl flightAdministrationService;
 
@@ -47,7 +45,6 @@ public class FlightInfoServiceImplTest {
         this.flightAdministrationService = new FlightAdministrationServiceImpl(flightRunwayRepository, flightTakeOffRepository, awaitingFlightsRepository);
         this.flightRunwayRequestService = new FlightRunwayRequestServiceImpl(flightRunwayRepository, awaitingFlightsRepository);
         this.flightInfoService = new FlightInfoServiceImpl(flightTakeOffRepository);
-        this.flightTrackingService = new FlightTrackingServiceImpl(awaitingFlightsRepository);
     }
 
     @Test
