@@ -3,10 +3,12 @@ package ar.edu.itba.pod.client.clients;
 import static ar.edu.itba.pod.client.ClientUtils.DEFAULT_REGISTRY_ADDRESS;
 import static ar.edu.itba.pod.client.ClientUtils.getRegistry;
 
+import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +53,13 @@ public final class FlightTrackingClient {
 
         final FlightTrackingService service = (FlightTrackingService) registry.lookup(FlightTrackingService.CANONICAL_NAME);
 
-        final FlightRunwayEventConsumer callback = new RunwayEventCallback();
+        final FlightRunwayEventConsumer callback = new RunwayEventCallback(obj -> {
+            try {
+                UnicastRemoteObject.unexportObject(obj, true);
+            } catch(final NoSuchObjectException e) {
+                System.err.println("Callback was unexported even though it wasn't exported");
+            }
+        });
 
         UnicastRemoteObject.exportObject(callback, 0);
 
@@ -66,6 +74,12 @@ public final class FlightTrackingClient {
     }
 
     public static final class RunwayEventCallback implements FlightRunwayEventConsumer {
+
+        private final Consumer<RunwayEventCallback> cleanupMethod;
+
+        public RunwayEventCallback(final Consumer<RunwayEventCallback> cleanupMethod) {
+            this.cleanupMethod = cleanupMethod;
+        }
 
         @Override
         public void accept(final FlightRunwayEvent e) throws RemoteException {
@@ -87,9 +101,9 @@ public final class FlightTrackingClient {
                     out ="Flight " + e.getFlight() + " with destiny "
                         + e.getDestination() + " departed on runway " + e.getRunway() + "."
                         ;
-                    // Como el avion ya despego, des-exportamos el callback
+                    // Como el avion ya despego, ejecutamos el cleanup method
                     // Como necesitamos la autoreferencia, no podemos usar lambda :(
-                    UnicastRemoteObject.unexportObject(this, true);
+                    cleanupMethod.accept(this);
                     break;
                 default:
                     throw new IllegalStateException();
