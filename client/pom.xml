@@ -3,19 +3,19 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>tp1-parent</artifactId>
+    <artifactId>tpe1-g16-parent</artifactId>
     <groupId>ar.edu.itba.pod</groupId>
     <version>1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>tp1-client</artifactId>
+  <artifactId>tpe1-g16-client</artifactId>
   <version>1.0-SNAPSHOT</version>
-  <name>tp1-client</name>
+  <name>tpe1-g16-client</name>
 
   <dependencies>
     <!-- Modules -->
     <dependency>
       <groupId>ar.edu.itba.pod</groupId>
-      <artifactId>tp1-api</artifactId>
+      <artifactId>tpe1-g16-api</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
 
