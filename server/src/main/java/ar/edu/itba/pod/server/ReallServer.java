@@ -10,7 +10,6 @@ import ar.edu.itba.pod.server.repositories.FlightTakeOffRepository;
 import ar.edu.itba.pod.server.repositories.impls.InMemoryAwaitingFlightsRepository;
 import ar.edu.itba.pod.server.repositories.impls.InMemoryFlightRunwayRepository;
 import ar.edu.itba.pod.server.repositories.impls.InMemoryFlightTakeOffRepository;
-import ar.edu.itba.pod.server.services.AllInOneServiceImpl;
 import ar.edu.itba.pod.server.services.FlightAdministrationServiceImpl;
 import ar.edu.itba.pod.server.services.FlightInfoServiceImpl;
 import ar.edu.itba.pod.server.services.FlightRunwayRequestServiceImpl;
@@ -18,17 +17,16 @@ import ar.edu.itba.pod.server.services.FlightTrackingServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.Executors;
 
-public final class Server {
-    private static final Logger logger = LoggerFactory.getLogger(Server.class);
+public final class ReallServer {
+    private static final Logger logger = LoggerFactory.getLogger(ReallServer.class);
 
-    private Server() {
+    private ReallServer() {
         // static class
     }
 
@@ -53,25 +51,24 @@ public final class Server {
         final FlightTakeOffRepository   flightTakeOffRepository     = new InMemoryFlightTakeOffRepository();
         final AwaitingFlightsRepository awaitingFlightsRepository   = new InMemoryAwaitingFlightsRepository();
 
-        final AllInOneServiceImpl allInOneService = new AllInOneServiceImpl(
-            new FlightAdministrationServiceImpl(flightRunwayRepository, flightTakeOffRepository, awaitingFlightsRepository),
-            new FlightInfoServiceImpl(flightTakeOffRepository),
-            new FlightRunwayRequestServiceImpl(flightRunwayRepository, awaitingFlightsRepository),
-            new FlightTrackingServiceImpl(awaitingFlightsRepository)
+        final FlightAdministrationService adminService = new FlightAdministrationServiceImpl(
+            flightRunwayRepository, flightTakeOffRepository, awaitingFlightsRepository
         );
-
-        final Remote servant = UnicastRemoteObject.exportObject(allInOneService, 0);
-
-        registry.rebind(FlightAdministrationService .CANONICAL_NAME, servant);
+        registry.rebind(FlightAdministrationService.CANONICAL_NAME, UnicastRemoteObject.exportObject(adminService, 0));
         logger.info("Flight Administration Service Registered");
 
-        registry.rebind(FlightInfoService           .CANONICAL_NAME, servant);
+        final FlightInfoService infoService = new FlightInfoServiceImpl(flightTakeOffRepository);
+        registry.rebind(FlightInfoService.CANONICAL_NAME, UnicastRemoteObject.exportObject(infoService, 0));
         logger.info("Flight Information Service Registered");
 
-        registry.rebind(FlightTrackingService       .CANONICAL_NAME, servant);
+        final FlightTrackingService trackingService = new FlightTrackingServiceImpl(awaitingFlightsRepository);
+        registry.rebind(FlightTrackingService.CANONICAL_NAME, UnicastRemoteObject.exportObject(trackingService, 0));
         logger.info("Flight Tracking Service Registered");
 
-        registry.rebind(FlightRunwayRequestService  .CANONICAL_NAME, servant);
+        final FlightRunwayRequestService trackRequestService = new FlightRunwayRequestServiceImpl(
+            flightRunwayRepository, awaitingFlightsRepository
+        );
+        registry.rebind(FlightRunwayRequestService.CANONICAL_NAME, UnicastRemoteObject.exportObject(trackRequestService, 0));
         logger.info("Flight Runway Request Service Registered");
 
         logger.info("All Services Registered - Awaiting Requests ...");
