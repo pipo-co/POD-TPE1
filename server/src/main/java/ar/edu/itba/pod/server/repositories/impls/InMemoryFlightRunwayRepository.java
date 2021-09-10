@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -35,15 +36,17 @@ public class InMemoryFlightRunwayRepository implements FlightRunwayRepository {
 
     private final Map<String, InMemoryFlightRunway>  runways;
     private final AtomicLong                         takeOffOrderCount;
+    private final ExecutorService                    executorService;
 
-    public InMemoryFlightRunwayRepository() {
+    public InMemoryFlightRunwayRepository(final ExecutorService executorService) {
+        this.executorService    = executorService;
         this.runways            = Collections.synchronizedMap(new HashMap<>());
         this.takeOffOrderCount  = new AtomicLong();
     }
 
     @Override
     public FlightRunway createRunway(final String name, final FlightRunwayCategory category) throws UniqueRunwayNameConstraintException {
-        final InMemoryFlightRunway runway = new InMemoryFlightRunway(name, category);
+        final InMemoryFlightRunway runway = new InMemoryFlightRunway(name, category, executorService);
 
         if(runways.putIfAbsent(name, runway) != null) {
             throw new UniqueRunwayNameConstraintException();

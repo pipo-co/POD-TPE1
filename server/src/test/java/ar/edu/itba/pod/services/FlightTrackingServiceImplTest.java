@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
+import ar.edu.itba.pod.services.utils.CurrentThreadExecutorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -30,24 +31,24 @@ import ar.edu.itba.pod.server.services.FlightTrackingServiceImpl;
 
 public class FlightTrackingServiceImplTest {
 
-    private FlightRunwayRepository flightRunwayRepository;
-    private AwaitingFlightsRepository awaitingFlightsRepository;
-    private FlightTakeOffRepository flightTakeOffRepository;
+    private FlightRunwayRepository          flightRunwayRepository;
+    private AwaitingFlightsRepository       awaitingFlightsRepository;
+    private FlightTakeOffRepository         flightTakeOffRepository;
     
-    private FlightRunwayRequestService flightRunwayRequestService;
-    private FlightTrackingServiceImpl flightTrackingService;
+    private FlightRunwayRequestService      flightRunwayRequestService;
+    private FlightTrackingServiceImpl       flightTrackingService;
     private FlightAdministrationServiceImpl flightAdministrationService;
 
     @BeforeEach
     private void beforeEach() {
 
-        this.flightRunwayRepository = new InMemoryFlightRunwayRepository();
-        this.awaitingFlightsRepository = new InMemoryAwaitingFlightsRepository();
-        this.flightTakeOffRepository = new InMemoryFlightTakeOffRepository();
+        this.flightRunwayRepository         = new InMemoryFlightRunwayRepository(new CurrentThreadExecutorService());
+        this.awaitingFlightsRepository      = new InMemoryAwaitingFlightsRepository();
+        this.flightTakeOffRepository        = new InMemoryFlightTakeOffRepository();
         
-        this.flightAdministrationService = new FlightAdministrationServiceImpl(flightRunwayRepository, flightTakeOffRepository, awaitingFlightsRepository);
-        this.flightRunwayRequestService = new FlightRunwayRequestServiceImpl(flightRunwayRepository, awaitingFlightsRepository);
-        this.flightTrackingService = new FlightTrackingServiceImpl(awaitingFlightsRepository);
+        this.flightAdministrationService    = new FlightAdministrationServiceImpl(flightRunwayRepository, flightTakeOffRepository, awaitingFlightsRepository);
+        this.flightRunwayRequestService     = new FlightRunwayRequestServiceImpl(flightRunwayRepository, awaitingFlightsRepository);
+        this.flightTrackingService          = new FlightTrackingServiceImpl(awaitingFlightsRepository);
     }
 
     @Test
@@ -84,14 +85,12 @@ public class FlightTrackingServiceImplTest {
 
         flightAdministrationService.orderTakeOff();
 
-        Thread.sleep(1000);
-
         assertEquals("Flight f2 progressed to position: 0", runwayProgress.get(0));
         
     }
 
     @Test
-    public void trackFlightRunwayAssignment() throws FlightNotFoundException, AirlineFlightMismatchException, RemoteException, InterruptedException{
+    public void trackFlightRunwayAssignment() throws FlightNotFoundException, AirlineFlightMismatchException, RemoteException {
 
         List<String> runwayAssignment = new LinkedList<>();
 
@@ -110,8 +109,6 @@ public class FlightTrackingServiceImplTest {
         });
         
         flightAdministrationService.reorderRunways();
-
-        Thread.sleep(1000);
         
         assertEquals("Flight f2 was reasigned to runway: R2", runwayAssignment.get(0));
         
@@ -133,8 +130,6 @@ public class FlightTrackingServiceImplTest {
         });
         
         flightAdministrationService.orderTakeOff();
-        
-        Thread.sleep(1000);
 
         assertEquals("Flight takeoff f1", takeoffs.get(0));
         

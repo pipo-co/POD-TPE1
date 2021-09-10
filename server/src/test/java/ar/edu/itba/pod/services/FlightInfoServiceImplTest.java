@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import ar.edu.itba.pod.services.utils.CurrentThreadExecutorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,24 +28,24 @@ import ar.edu.itba.pod.server.services.FlightRunwayRequestServiceImpl;
 
 public class FlightInfoServiceImplTest {
     
-    private FlightRunwayRepository flightRunwayRepository;
-    private AwaitingFlightsRepository awaitingFlightsRepository;
-    private FlightTakeOffRepository flightTakeOffRepository;
+    private FlightRunwayRepository          flightRunwayRepository;
+    private AwaitingFlightsRepository       awaitingFlightsRepository;
+    private FlightTakeOffRepository         flightTakeOffRepository;
     
-    private FlightRunwayRequestService flightRunwayRequestService;
-    private FlightInfoServiceImpl flightInfoService;
+    private FlightRunwayRequestService      flightRunwayRequestService;
+    private FlightInfoServiceImpl           flightInfoService;
     private FlightAdministrationServiceImpl flightAdministrationService;
 
     @BeforeEach
     private void beforeEach() {
 
-        this.flightRunwayRepository = new InMemoryFlightRunwayRepository();
-        this.awaitingFlightsRepository = new InMemoryAwaitingFlightsRepository();
-        this.flightTakeOffRepository = new InMemoryFlightTakeOffRepository();
+        this.flightRunwayRepository         = new InMemoryFlightRunwayRepository(new CurrentThreadExecutorService());
+        this.awaitingFlightsRepository      = new InMemoryAwaitingFlightsRepository();
+        this.flightTakeOffRepository        = new InMemoryFlightTakeOffRepository();
         
-        this.flightAdministrationService = new FlightAdministrationServiceImpl(flightRunwayRepository, flightTakeOffRepository, awaitingFlightsRepository);
-        this.flightRunwayRequestService = new FlightRunwayRequestServiceImpl(flightRunwayRepository, awaitingFlightsRepository);
-        this.flightInfoService = new FlightInfoServiceImpl(flightTakeOffRepository);
+        this.flightAdministrationService    = new FlightAdministrationServiceImpl(flightRunwayRepository, flightTakeOffRepository, awaitingFlightsRepository);
+        this.flightRunwayRequestService     = new FlightRunwayRequestServiceImpl(flightRunwayRepository, awaitingFlightsRepository);
+        this.flightInfoService              = new FlightInfoServiceImpl(flightTakeOffRepository);
     }
 
     @Test

@@ -15,6 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import ar.edu.itba.pod.services.utils.CurrentThreadExecutorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -50,7 +51,7 @@ public class FlightAdministrationServiceImplTest {
 
     @BeforeEach
     private void beforeEach() {
-        this.flightRunwayRepository     = new InMemoryFlightRunwayRepository();
+        this.flightRunwayRepository     = new InMemoryFlightRunwayRepository(new CurrentThreadExecutorService());
         this.awaitingFlightsRepository  = new InMemoryAwaitingFlightsRepository();
         this.flightTakeOffRepository    = new InMemoryFlightTakeOffRepository();
 

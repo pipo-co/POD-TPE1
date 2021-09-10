@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import ar.edu.itba.pod.services.utils.CurrentThreadExecutorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +35,7 @@ public class FlightRunwayRequestServiceImplTest {
 
     @BeforeEach
     private void beforeEach() {
-        this.flightRunwayRepository     = new InMemoryFlightRunwayRepository();
+        this.flightRunwayRepository     = new InMemoryFlightRunwayRepository(new CurrentThreadExecutorService());
         this.awaitingFlightsRepository  = new InMemoryAwaitingFlightsRepository();
         this.trackRunwayRequestService  = new FlightRunwayRequestServiceImpl(
             flightRunwayRepository, awaitingFlightsRepository

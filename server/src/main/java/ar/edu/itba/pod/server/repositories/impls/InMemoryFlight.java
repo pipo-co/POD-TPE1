@@ -3,7 +3,6 @@ package ar.edu.itba.pod.server.repositories.impls;
 import ar.edu.itba.pod.callbacks.FlightRunwayEventConsumer;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
 import ar.edu.itba.pod.models.FlightRunwayEvent;
-import ar.edu.itba.pod.models.FlightTakeOff;
 import ar.edu.itba.pod.server.models.Flight;
 
 import org.slf4j.Logger;
@@ -14,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 public final class InMemoryFlight implements Flight {
     private static final Logger logger = LoggerFactory.getLogger(InMemoryFlight.class);
@@ -34,33 +34,22 @@ public final class InMemoryFlight implements Flight {
         this.runwayEventSubscribers     = Collections.synchronizedList(new LinkedList<>());
     }
 
-    @Override
-    public FlightTakeOff toTakeOff(final long currentTakeOffOrder, final String runway) {
-        return new FlightTakeOff(
-            currentTakeOffOrder - orderRegisteredOn - 1,
-            runway, 
-            code, 
-            airline,
-            destination
-        );
-    }
-
-    public void publishRunwayEvent(final FlightRunwayEvent event) {
-        final List<Thread> callbackTasks = new ArrayList<>(runwayEventSubscribers.size());
+    public void publishRunwayEvent(final FlightRunwayEvent event, final ExecutorService executorService) {
+        final List<Runnable> callbackTasks = new ArrayList<>(runwayEventSubscribers.size());
 
         synchronized(runwayEventSubscribers) {
             for(final FlightRunwayEventConsumer subscriber : runwayEventSubscribers) {
-                callbackTasks.add(new Thread(() -> {
+                callbackTasks.add(() -> {
                     try {
                         subscriber.accept(event);
-                    } catch (final RemoteException e) {
+                    } catch(final RemoteException e) {
                         logger.warn("Runway event callback on flight {} failed", code, e);
                     }
-                }));
+                });
             }
         }
 
-        callbackTasks.forEach(Thread::start);
+        callbackTasks.forEach(executorService::submit);
     }
 
     public void suscribeToRunwayEvent(final FlightRunwayEventConsumer callback) {
