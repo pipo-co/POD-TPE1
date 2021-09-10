@@ -5,10 +5,10 @@
   <parent>
     <artifactId>tpe1-g16-parent</artifactId>
     <groupId>ar.edu.itba.pod</groupId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
   </parent>
   <artifactId>tpe1-g16-server</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <name>tpe1-g16-server</name>
 
   <dependencies>
