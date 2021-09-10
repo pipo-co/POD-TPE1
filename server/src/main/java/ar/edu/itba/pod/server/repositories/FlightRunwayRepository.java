@@ -7,8 +7,8 @@ import ar.edu.itba.pod.exceptions.RunwayNotFoundException;
 import ar.edu.itba.pod.exceptions.UniqueRunwayNameConstraintException;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
 import ar.edu.itba.pod.models.FlightTakeOff;
-import ar.edu.itba.pod.models.Flight;
-import ar.edu.itba.pod.models.FlightRunway;
+import ar.edu.itba.pod.server.models.Flight;
+import ar.edu.itba.pod.server.models.FlightRunway;
 
 public interface FlightRunwayRepository {
 

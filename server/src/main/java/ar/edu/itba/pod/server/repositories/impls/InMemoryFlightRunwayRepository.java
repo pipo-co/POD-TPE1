@@ -18,10 +18,8 @@ import ar.edu.itba.pod.exceptions.UniqueRunwayNameConstraintException;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
 import ar.edu.itba.pod.models.FlightTakeOff;
 import ar.edu.itba.pod.server.exceptions.UnsupportedFlightException;
-import ar.edu.itba.pod.models.Flight;
-import ar.edu.itba.pod.models.FlightRunway;
-import ar.edu.itba.pod.server.models.InMemoryFlight;
-import ar.edu.itba.pod.server.models.InMemoryFlightRunway;
+import ar.edu.itba.pod.server.models.Flight;
+import ar.edu.itba.pod.server.models.FlightRunway;
 import ar.edu.itba.pod.server.repositories.FlightRunwayRepository;
 
 public class InMemoryFlightRunwayRepository implements FlightRunwayRepository {

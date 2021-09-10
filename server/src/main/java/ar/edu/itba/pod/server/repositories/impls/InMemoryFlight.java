@@ -1,11 +1,11 @@
-package ar.edu.itba.pod.server.models;
+package ar.edu.itba.pod.server.repositories.impls;
 
 import ar.edu.itba.pod.callbacks.FlightRunwayEventConsumer;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
 import ar.edu.itba.pod.models.FlightRunwayEvent;
 import ar.edu.itba.pod.models.FlightTakeOff;
+import ar.edu.itba.pod.server.models.Flight;
 
-import ar.edu.itba.pod.models.Flight;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

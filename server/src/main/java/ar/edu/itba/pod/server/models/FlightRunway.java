@@ -1,6 +1,8 @@
-package ar.edu.itba.pod.models;
+package ar.edu.itba.pod.server.models;
 
 import java.util.function.Consumer;
+
+import ar.edu.itba.pod.models.FlightRunwayCategory;
 
 public interface FlightRunway {
 

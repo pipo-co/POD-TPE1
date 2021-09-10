@@ -1,4 +1,4 @@
-package ar.edu.itba.pod.server.models;
+package ar.edu.itba.pod.server.repositories.impls;
 
 import static ar.edu.itba.pod.models.FlightRunwayEvent.EventType.FLIGHT_TAKE_OFF;
 import static ar.edu.itba.pod.models.FlightRunwayEvent.EventType.RUNWAY_ASSIGNMENT;
@@ -13,8 +13,8 @@ import java.util.function.Consumer;
 import ar.edu.itba.pod.models.FlightRunwayCategory;
 import ar.edu.itba.pod.models.FlightRunwayEvent;
 import ar.edu.itba.pod.models.FlightTakeOff;
-import ar.edu.itba.pod.models.Flight;
-import ar.edu.itba.pod.models.FlightRunway;
+import ar.edu.itba.pod.server.models.Flight;
+import ar.edu.itba.pod.server.models.FlightRunway;
 
 public final class InMemoryFlightRunway implements FlightRunway {
     private final String                name;

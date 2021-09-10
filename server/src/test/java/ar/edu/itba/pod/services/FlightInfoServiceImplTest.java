@@ -50,7 +50,6 @@ public class FlightInfoServiceImplTest {
         this.flightTrackingService = new FlightTrackingServiceImpl(awaitingFlightsRepository);
     }
 
-    
     @Test
     void testQueryAirlineTakeOffs() throws UniqueFlightCodeConstraintException, UnregistrableFlightException, RemoteException {
         flightRunwayRepository.createRunway("R1", FlightRunwayCategory.A);

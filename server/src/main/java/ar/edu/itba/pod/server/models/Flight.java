@@ -1,4 +1,7 @@
-package ar.edu.itba.pod.models;
+package ar.edu.itba.pod.server.models;
+
+import ar.edu.itba.pod.models.FlightRunwayCategory;
+import ar.edu.itba.pod.models.FlightTakeOff;
 
 public interface Flight {
 

@@ -4,7 +4,7 @@ import ar.edu.itba.pod.callbacks.FlightRunwayEventConsumer;
 import ar.edu.itba.pod.exceptions.AirlineFlightMismatchException;
 import ar.edu.itba.pod.exceptions.FlightNotFoundException;
 import ar.edu.itba.pod.interfaces.FlightTrackingService;
-import ar.edu.itba.pod.models.Flight;
+import ar.edu.itba.pod.server.models.Flight;
 import ar.edu.itba.pod.server.repositories.AwaitingFlightsRepository;
 
 import java.rmi.RemoteException;
