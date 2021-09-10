@@ -5,8 +5,6 @@ import ar.edu.itba.pod.models.FlightTakeOff;
 
 public interface Flight {
 
-    FlightTakeOff toTakeOff(final long currentTakeOffOrder, final String runway);
-
     String getAirline();
 
     String getCode();
@@ -16,4 +14,14 @@ public interface Flight {
     FlightRunwayCategory getMinCategory();
 
     long getOrderRegisteredOn();
+
+    default FlightTakeOff toTakeOff(final long currentTakeOffOrder, final String runway) {
+        return new FlightTakeOff(
+            currentTakeOffOrder - getOrderRegisteredOn() - 1,
+            runway,
+            getCode(),
+            getAirline(),
+            getDestination()
+        );
+    }
 }
