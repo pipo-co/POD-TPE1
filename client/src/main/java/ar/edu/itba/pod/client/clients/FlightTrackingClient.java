@@ -27,9 +27,9 @@ public final class FlightTrackingClient {
     public static void executeClient(final FlightTrackingService service, final String airline, final String flightCode, final FlightRunwayEventConsumer callback) throws RemoteException {
         try {
             service.suscribeToFlight(airline, flightCode, callback);
-        } catch (FlightNotFoundException e) {
+        } catch(final FlightNotFoundException e) {
             throw new RuntimeException("Flight not found. It either wasn't registered yet or has already departed.");
-        } catch (AirlineFlightMismatchException e) {
+        } catch(final AirlineFlightMismatchException e) {
             throw new RuntimeException("This flight doesn't match the specified airline.");
         }
     }

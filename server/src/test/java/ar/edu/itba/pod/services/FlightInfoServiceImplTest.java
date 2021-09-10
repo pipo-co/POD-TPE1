@@ -65,10 +65,10 @@ public class FlightInfoServiceImplTest {
         final List<String> expected = List.of("flightCode2", "flightCode3");
         final List<String> notExpected = List.of("flightCode1", "flightCode4");
 
-        assertTrue(takeoffs.stream().map(ft -> ft.getFlight()).allMatch(expected::contains));
-        assertTrue(expected.containsAll(takeoffs.stream().map(ft -> ft.getFlight()).collect(Collectors.toList())));
+        assertTrue(takeoffs.stream().map(FlightTakeOff::getFlight).allMatch(expected::contains));
+        assertTrue(expected.containsAll(takeoffs.stream().map(FlightTakeOff::getFlight).collect(Collectors.toList())));
 
-        assertTrue(takeoffs.stream().map(ft -> ft.getFlight()).allMatch(Predicate.not(notExpected::contains)));
+        assertTrue(takeoffs.stream().map(FlightTakeOff::getFlight).allMatch(Predicate.not(notExpected::contains)));
     }
 
     @Test
@@ -88,10 +88,10 @@ public class FlightInfoServiceImplTest {
         final List<String> expected = List.of("flightCode1");
         final List<String> notExpected = List.of("flightCode2", "flightCode3", "flightCode4");
 
-        assertTrue(takeoffs.stream().map(ft -> ft.getFlight()).allMatch(expected::contains));
-        assertTrue(expected.containsAll(takeoffs.stream().map(ft -> ft.getFlight()).collect(Collectors.toList())));
+        assertTrue(takeoffs.stream().map(FlightTakeOff::getFlight).allMatch(expected::contains));
+        assertTrue(expected.containsAll(takeoffs.stream().map(FlightTakeOff::getFlight).collect(Collectors.toList())));
         
-        assertTrue(takeoffs.stream().map(ft -> ft.getFlight()).allMatch(Predicate.not(notExpected::contains)));
+        assertTrue(takeoffs.stream().map(FlightTakeOff::getFlight).allMatch(Predicate.not(notExpected::contains)));
     }
     
     @Test
@@ -112,9 +112,9 @@ public class FlightInfoServiceImplTest {
         final List<String> expected = List.of("flightCode1", "flightCode2", "flightCode3");
         final List<String> notExpected = List.of("flightCode4");
 
-        assertTrue(takeoffs.stream().map(ft -> ft.getFlight()).allMatch(expected::contains));
-        assertTrue(expected.containsAll(takeoffs.stream().map(ft -> ft.getFlight()).collect(Collectors.toList())));
+        assertTrue(takeoffs.stream().map(FlightTakeOff::getFlight).allMatch(expected::contains));
+        assertTrue(expected.containsAll(takeoffs.stream().map(FlightTakeOff::getFlight).collect(Collectors.toList())));
         
-        assertTrue(takeoffs.stream().map(ft -> ft.getFlight()).allMatch(Predicate.not(notExpected::contains)));
+        assertTrue(takeoffs.stream().map(FlightTakeOff::getFlight).allMatch(Predicate.not(notExpected::contains)));
     }
 }

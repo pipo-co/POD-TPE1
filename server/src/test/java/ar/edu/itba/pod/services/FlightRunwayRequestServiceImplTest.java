@@ -59,7 +59,7 @@ public class FlightRunwayRequestServiceImplTest {
     }
 
     @Test
-    void registerFlightWithoutRunway() throws RemoteException {
+    void registerFlightWithoutRunway() {
 
         assertThrows(UnregistrableFlightException.class,
                 () -> trackRunwayRequestService.registerFlight("flight1", "COR2", "Latam", FlightRunwayCategory.A));
@@ -79,7 +79,7 @@ public class FlightRunwayRequestServiceImplTest {
     }
 
     @Test
-    void registerFlightWithoutSuitableCategoryRunway() throws RemoteException {
+    void registerFlightWithoutSuitableCategoryRunway() {
 
         flightRunwayRepository.createRunway("R1", FlightRunwayCategory.A);
         assertThrows(UnregistrableFlightException.class,
@@ -87,7 +87,7 @@ public class FlightRunwayRequestServiceImplTest {
     }
 
     @Test
-    void registerMultipleFlights() throws RemoteException, InterruptedException {
+    void registerMultipleFlights() throws InterruptedException {
 
         flightRunwayRepository.createRunway("R1", FlightRunwayCategory.A);
         flightRunwayRepository.createRunway("R2", FlightRunwayCategory.B);

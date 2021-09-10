@@ -67,7 +67,7 @@ public class FlightTrackingServiceImplTest {
     }
 
     @Test
-    public void trackFlightRunwayProgressed() throws FlightNotFoundException, AirlineFlightMismatchException, RemoteException, InterruptedException{
+    public void trackFlightRunwayProgressed() throws FlightNotFoundException, AirlineFlightMismatchException, RemoteException {
 
         List<String> runwayProgress = new LinkedList<>();
 
@@ -115,7 +115,7 @@ public class FlightTrackingServiceImplTest {
     }
 
     @Test
-    public void trackFlightOrderTakeoff() throws FlightNotFoundException, AirlineFlightMismatchException, RemoteException, InterruptedException{
+    public void trackFlightOrderTakeoff() throws FlightNotFoundException, AirlineFlightMismatchException, RemoteException {
 
         List<String> takeoffs = new LinkedList<>();
 
