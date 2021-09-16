@@ -31,22 +31,22 @@ Este ejecutable tambien permite especificar la direccion del registry: `run-serv
 
 ### Paso 3
 
-Una vez prendido los 2 servicios necesario, ya se puede utilizar el sistema. Existen 4 clientes para hacer uso de la aplicacion
+Una vez prendido los 2 servicios necesarios, ya se puede utilizar el sistema. Existen 4 clientes para hacer uso de la aplicacion
 
 #### Cliente de Administración
 
 ```sh
-./run-management.sh -DserverAddress=xx.xx.xx.xx:yyyy -Daction=actionName [ -Drunway=runwayName | -Dcategory=**minCategory** ]
+./run-management.sh -DserverAddress=xx.xx.xx.xx:yyyy -Daction=actionName [ -Drunway=runwayName | -Dcategory=minCategory ]
 ```
 
 - **xx.xx.xx.xx:yyyy** es la dirección IP y el puerto donde está publicado el servicio de administración de los despegues.
 - **actionName**: es el nombre de la acción a realizar.
-  - add: Agrega una pista de categoría **minCategory** con el nombre **runwayName**. Deberá imprimir en pantalla el estado de la pista luego de agregarla o el error correspondiente.
-  - open: Abre la pista **runwayName**. Deberá imprimir en pantalla el estado de la pista luego de invocar a la acción o el error correspondiente.
-  - close: Cierra la pista **runwayName**. Deberá imprimir en pantalla el estado de la pista luego de invocar a la acción o el error correspondiente.
-  - status: Consulta el estado de la pista **runwayName**. Deberá imprimir en pantalla el estado de la pista al momento de la consulta.
-  - takeOff:Emiteunaordendedespegueenlaspistasabiertas.Deberáimprimiren pantalla la finalización de la acción.
-  - reorder: Emite una orden de reordenamiento en las pistas. Deberá imprimir en pantalla la cantidad de vuelos que obtuvieron una pista y detallar aquellos que no.
+  - add: Agrega una pista de categoría **minCategory** con el nombre **runwayName**. Imprime en pantalla el estado de la pista luego de agregarla o el error correspondiente.
+  - open: Abre la pista **runwayName**. Imprime en pantalla el estado de la pista luego de invocar a la acción o el error correspondiente.
+  - close: Cierra la pista **runwayName**. Imprime en pantalla el estado de la pista luego de invocar a la acción o el error correspondiente.
+  - status: Consulta el estado de la pista **runwayName**. Imprime en pantalla el estado de la pista al momento de la consulta.
+  - takeOff: Emite una orden de despegue en las pistas abiertas. Imprime en pantalla la finalización de la acción.
+  - reorder: Emite una orden de reordenamiento en las pistas. Imprime en pantalla la cantidad de vuelos que obtuvieron una pista y detallar aquellos que no.
 
 #### Cliente de Solicitud de Pista
 
