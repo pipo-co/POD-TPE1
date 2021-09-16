@@ -11,7 +11,7 @@ Trabajo practico numero 1 de Programacion de Objetos Distribuidos: Despegues
 
 ## Compilacion
 
-Para la compilacion del proyecto basta con correr `mvn clean install` en la raiz del proyecto. Esto genera los 2 archivos necesarios para la ejecucion. Esto son 2 archivos `.tar.gz` ubicados en `server/target` y `client/target`.
+Para la compilacion del proyecto es necesario tener Java 11 o superior y basta con correr `mvn clean install` en la raiz del proyecto. Esto genera los 2 archivos necesarios para la ejecucion. Esto son 2 archivos `.tar.gz` ubicados en `server/target` y `client/target`.
 
 ## Ejecucion
 
