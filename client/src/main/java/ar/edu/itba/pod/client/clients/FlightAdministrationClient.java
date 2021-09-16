@@ -165,10 +165,9 @@ public final class FlightAdministrationClient {
             throw new IllegalArgumentException(errorMessage);
         }
 
-        final Action action;
-        try {
-            action = Action.fromName(actionName);
-        } catch (final IllegalArgumentException e) {
+        final Action action = Action.fromName(actionName);
+        
+        if(action == null) {
             throw new IllegalArgumentException(errorMessage);
         }
 

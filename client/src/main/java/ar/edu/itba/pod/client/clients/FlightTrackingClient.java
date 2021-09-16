@@ -48,7 +48,7 @@ public final class FlightTrackingClient {
 
         final String flightCode = System.getProperty("flightCode");
         if(flightCode == null || flightCode.isBlank()) {
-            throw new IllegalArgumentException("'outFile' argument must be provided");
+            throw new IllegalArgumentException("'flightCode' argument must be provided");
         }
 
         final FlightTrackingService service = (FlightTrackingService) registry.lookup(FlightTrackingService.CANONICAL_NAME);
