@@ -65,6 +65,7 @@ public final class FlightTrackingClient {
 
         try {
             executeClient(service, airline, flightCode, callback);
+            System.out.println("Client listening for flight '" + flightCode + "' events...");
         } catch(final Exception e) {
             System.err.println(e.getMessage());
             UnicastRemoteObject.unexportObject(callback, true);
