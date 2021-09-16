@@ -47,11 +47,13 @@ public final class FlightRunwayRequestClient {
 
         final String csvPath = System.getProperty("inPath");
         if(csvPath == null) {
-            throw new IllegalArgumentException("Missing 'inPath' system property pointing to csv input file");
+            System.err.println("Missing 'inPath' system property pointing to csv input file");
+            return;
         }
         final Path requestsCsv = Path.of(csvPath);
         if(!Files.isRegularFile(requestsCsv)) {
-            throw new IllegalArgumentException("'inPath' must point to a regular file");
+            System.err.println("'inPath' must point to a regular file");
+            return;
         }
 
         final FlightRunwayRequestService service = (FlightRunwayRequestService) registry.lookup(FlightRunwayRequestService.CANONICAL_NAME);

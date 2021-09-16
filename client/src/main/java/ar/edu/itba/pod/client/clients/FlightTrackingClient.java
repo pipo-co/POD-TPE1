@@ -43,12 +43,14 @@ public final class FlightTrackingClient {
 
         final String airline = System.getProperty("airline");
         if(airline == null) {
-            throw new IllegalArgumentException("Argument 'airline' is mandatory");
+            System.err.println("Argument 'airline' is mandatory");
+            return;
         }
 
         final String flightCode = System.getProperty("flightCode");
         if(flightCode == null || flightCode.isBlank()) {
-            throw new IllegalArgumentException("'flightCode' argument must be provided");
+            System.err.println("'flightCode' argument must be provided");
+            return;
         }
 
         final FlightTrackingService service = (FlightTrackingService) registry.lookup(FlightTrackingService.CANONICAL_NAME);

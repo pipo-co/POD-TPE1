@@ -51,10 +51,12 @@ public final class FlightInfoClient {
         final String airline  = System.getProperty("airline");
 
         if(outPath == null) {
-            throw new IllegalArgumentException("'outPath' argument must be provided");
+            System.err.println("'outPath' argument must be provided");
+            return;
         }
         if(runway != null && airline != null){
-            throw new IllegalArgumentException("You can only run one query at a time.");
+            System.err.println("You can only run one query at a time.");
+            return;
         }
 
         final Registry registry = getRegistry(System.getProperty("serverAddress", DEFAULT_REGISTRY_ADDRESS));
