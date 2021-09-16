@@ -49,7 +49,7 @@ public class InMemoryFlightRunwayRepository implements FlightRunwayRepository {
         final InMemoryFlightRunway runway = new InMemoryFlightRunway(name, category, executorService);
 
         if(runways.putIfAbsent(name, runway) != null) {
-            throw new UniqueRunwayNameConstraintException();
+            throw new UniqueRunwayNameConstraintException(name);
         }
 
         return runway;

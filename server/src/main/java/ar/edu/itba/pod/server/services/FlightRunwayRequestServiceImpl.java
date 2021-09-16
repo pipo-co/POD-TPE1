@@ -29,7 +29,7 @@ public class FlightRunwayRequestServiceImpl implements FlightRunwayRequestServic
         
         flightRunwayRepository.registerFlight(flight, unregisterFlight -> {
             awaitingFlightRepository.deleteFlight(unregisterFlight.getCode());
-            throw new UnregistrableFlightException();
+            throw new UnregistrableFlightException(unregisterFlight.getCode());
         }); 
     }
 }

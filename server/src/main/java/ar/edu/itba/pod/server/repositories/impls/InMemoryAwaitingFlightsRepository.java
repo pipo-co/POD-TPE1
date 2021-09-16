@@ -23,7 +23,7 @@ public class InMemoryAwaitingFlightsRepository implements AwaitingFlightsReposit
         final InMemoryFlight flight = new InMemoryFlight(code, airline, destination, minCategory, orderRegisteredOn);
 
         if(flights.putIfAbsent(flight.getCode(), flight) != null) {
-            throw new UniqueFlightCodeConstraintException();
+            throw new UniqueFlightCodeConstraintException(flight.getCode());
         }
 
         return flight;

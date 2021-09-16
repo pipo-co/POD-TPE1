@@ -24,7 +24,7 @@ public class FlightTrackingServiceImpl implements FlightTrackingService {
         final Flight flight = awaitingFlightsRepository.getFlight(flightCode).orElseThrow(FlightNotFoundException::new);
 
         if(!flight.getAirline().equals(airline)) {
-            throw new AirlineFlightMismatchException();
+            throw new AirlineFlightMismatchException(airline, flightCode);
         }
 
         awaitingFlightsRepository.addSubscriptionToFlight(flight.getCode(), callback);
